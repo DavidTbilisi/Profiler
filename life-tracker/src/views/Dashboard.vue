@@ -168,7 +168,7 @@
       </div>
 
       <!-- Quick Action Buttons -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <!-- Tasks Button -->
         <router-link
           to="/tasks"
@@ -218,6 +218,27 @@
             </div>
           </div>
         </router-link>
+
+        <!-- Import Data Button -->
+        <button
+          @click="showImporter = !showImporter"
+          class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow group text-left"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-gray-800">Import Data</h3>
+              <p class="text-sm text-gray-600">
+                {{ showImporter ? 'Hide importer' : 'From Markdown' }}
+              </p>
+            </div>
+            <div class="text-green-500 text-2xl group-hover:scale-110 transition-transform">📥</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Markdown Importer (Collapsible) -->
+      <div v-if="showImporter" class="mb-8">
+        <MarkdownImporter />
       </div>
       
       <!-- Recent activity -->
@@ -261,11 +282,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useProfileStore } from '@/stores/useProfileStore'
 import SkillsRadarChart from '@/components/SkillsRadarChart.vue'
+import MarkdownImporter from '@/components/MarkdownImporter.vue'
 
 const store = useProfileStore()
+const showImporter = ref(false)
 
 const todaysTasks = computed(() => store.todaysTasks)
 const todaysTotal = computed(() => todaysTasks.value.length)

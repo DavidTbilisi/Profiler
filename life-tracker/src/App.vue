@@ -1,18 +1,5 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import { onMounted, ref } from 'vue'
-import { useProfileStore } from '@/stores/useProfileStore'
-
-const store = useProfileStore()
-const mobileMenuOpen = ref(false)
-
-onMounted(() => {
-  store.loadFromLocalStorage()
-})
-</script>
-
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div>
     <!-- Navigation -->
     <nav class="bg-gray-800 shadow-lg">
       <div class="max-w-7xl mx-auto px-4">
@@ -179,3 +166,9 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const mobileMenuOpen = ref(false)
+</script>
