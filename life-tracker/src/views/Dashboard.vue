@@ -64,13 +64,24 @@
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">Skills Tracked</p>
-              <p class="text-2xl font-bold text-gray-900">{{ store.skills.length }}</p>
+              <p class="text-sm font-medium text-gray-600">Skills Portfolio</p>
+              <p class="text-2xl font-bold text-gray-900">{{ store.skills.length }} Skills</p>
             </div>
             <div class="text-green-500 text-3xl">🎯</div>
           </div>
-          <div v-if="store.skills.length > 0" class="mt-2">
-            <p class="text-xs text-gray-500">{{ averageSkillLevel.toFixed(1) }} avg. proficiency</p>
+          <div v-if="store.skills.length > 0" class="mt-2 flex items-center justify-between">
+            <p class="text-xs text-gray-500">
+              {{ averageSkillLevel.toFixed(1) }}/10
+            </p>
+            <div class="flex items-center gap-1">
+              <span class="text-sm">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
+              <span :class="['text-xs font-medium', getSkillLevelColor(averageSkillLevel)]">
+                {{ getSkillLevelText(averageSkillLevel) }}
+              </span>
+            </div>
+          </div>
+          <div v-else class="mt-2">
+            <p class="text-xs text-gray-500">No skills tracked yet</p>
           </div>
         </div>
 
@@ -120,15 +131,20 @@
           <div v-if="store.skills.length > 0" class="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
             <div>
               <div class="font-semibold text-gray-800">{{ store.skills.length }}</div>
-              <div class="text-gray-600">Total Skills</div>
+              <div class="text-gray-600 text-xs">Total Skills</div>
             </div>
             <div>
-              <div class="font-semibold text-gray-800">{{ averageSkillLevel.toFixed(1) }}</div>
-              <div class="text-gray-600">Avg. Level</div>
+              <div class="font-semibold text-gray-800 flex items-center justify-center gap-1">
+                <span>{{ averageSkillLevel.toFixed(1) }}/10</span>
+                <span class="text-sm">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
+              </div>
+              <div :class="['text-xs font-medium', getSkillLevelColor(averageSkillLevel)]">
+                {{ getSkillLevelText(averageSkillLevel) }}
+              </div>
             </div>
             <div>
               <div class="font-semibold text-gray-800">{{ expertSkillsCount }}</div>
-              <div class="text-gray-600">Expert (8+)</div>
+              <div class="text-gray-600 text-xs">Expert Level</div>
             </div>
           </div>
         </div>
@@ -337,6 +353,33 @@ function getMoodText(mood: number): string {
   if (mood <= 6) return 'Neutral'
   if (mood <= 8) return 'Good'
   return 'Amazing'
+}
+
+function getSkillLevelText(level: number): string {
+  if (level === 0) return 'No Skills'
+  if (level <= 2) return 'Beginner'
+  if (level <= 4) return 'Novice'
+  if (level <= 6) return 'Intermediate'
+  if (level <= 8) return 'Advanced'
+  return 'Expert'
+}
+
+function getSkillLevelEmoji(level: number): string {
+  if (level === 0) return '🌱'
+  if (level <= 2) return '🌱'
+  if (level <= 4) return '🌿'
+  if (level <= 6) return '🌳'
+  if (level <= 8) return '🎯'
+  return '🏆'
+}
+
+function getSkillLevelColor(level: number): string {
+  if (level === 0) return 'text-gray-500'
+  if (level <= 2) return 'text-red-500'
+  if (level <= 4) return 'text-yellow-500'
+  if (level <= 6) return 'text-blue-500'
+  if (level <= 8) return 'text-green-500'
+  return 'text-purple-500'
 }
 
 function formatTaskDate(dateString: string): string {

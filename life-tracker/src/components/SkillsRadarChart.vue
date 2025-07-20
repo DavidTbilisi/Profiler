@@ -47,6 +47,15 @@ const store = useProfileStore()
 
 const hasSkills = computed(() => store.skills.length > 0)
 
+function getProficiencyText(level: number): string {
+  if (level === 0) return 'No Skills'
+  if (level <= 2) return 'Beginner'
+  if (level <= 4) return 'Novice'
+  if (level <= 6) return 'Intermediate'
+  if (level <= 8) return 'Advanced'
+  return 'Expert'
+}
+
 const skillCategories = [
   'Programming & Development',
   'Design & Creative',
@@ -133,7 +142,8 @@ const chartOptions = computed(() => ({
       callbacks: {
         label: function(context: any) {
           const value = context.parsed.r
-          return `Proficiency: ${value.toFixed(1)}/10`
+          const levelText = getProficiencyText(value)
+          return `${levelText} (${value.toFixed(1)}/10)`
         }
       }
     }
