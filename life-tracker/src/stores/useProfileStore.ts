@@ -277,6 +277,15 @@ export const useProfileStore = defineStore('profile', {
         const data = localStorage.getItem('profileData')
         if (data) {
           const parsed = JSON.parse(data)
+          
+          // Data migration: ensure proficiency values are numbers
+          if (parsed.skills) {
+            parsed.skills = parsed.skills.map((skill: any) => ({
+              ...skill,
+              proficiency: Number(skill.proficiency) || 5
+            }))
+          }
+          
           Object.assign(this, parsed)
           this.updateStats()
         }

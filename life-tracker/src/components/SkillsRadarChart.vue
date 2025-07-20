@@ -77,7 +77,7 @@ const chartData = computed(() => {
     const categorySkills = store.skills.filter(skill => skill.category === category)
     if (categorySkills.length === 0) return 0
     
-    const sum = categorySkills.reduce((total, skill) => total + skill.proficiency, 0)
+    const sum = categorySkills.reduce((total, skill) => total + Number(skill.proficiency), 0)
     return sum / categorySkills.length
   })
 

@@ -114,139 +114,110 @@
  
       </div>
       
-      <!-- Main content grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Skills Radar Chart -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-gray-800">Skills Overview</h2>
-            <router-link
-              to="/skills"
-              class="text-blue-500 hover:text-blue-700 text-sm"
-            >
-              View Details →
-            </router-link>
+      <!-- Skills Overview - Full Width -->
+      <div class="mb-8 bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-800">Skills Overview</h2>
+          <router-link
+            to="/skills"
+            class="text-blue-500 hover:text-blue-700 text-sm"
+          >
+            View Details →
+          </router-link>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <!-- Radar Chart -->
+          <div class="flex justify-center">
+            <div class="w-full max-w-md">
+              <SkillsRadarChart />
+            </div>
           </div>
-          <SkillsRadarChart />
-          <div v-if="store.skills.length > 0" class="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
-            <div>
-              <div class="font-semibold text-gray-800">{{ store.skills.length }}</div>
-              <div class="text-gray-600 text-xs">Total Skills</div>
-            </div>
-            <div>
-              <div class="font-semibold text-gray-800 flex items-center justify-center gap-1">
-                <span>{{ averageSkillLevel.toFixed(1) }}/10</span>
-                <span class="text-sm">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
+          <!-- Stats -->
+          <div class="space-y-4">
+            <div v-if="store.skills.length > 0" class="grid grid-cols-3 gap-4 text-center">
+              <div class="p-4 bg-blue-50 rounded-lg">
+                <div class="font-semibold text-2xl text-blue-600">{{ store.skills.length }}</div>
+                <div class="text-blue-800 text-sm">Total Skills</div>
               </div>
-              <div :class="['text-xs font-medium', getSkillLevelColor(averageSkillLevel)]">
-                {{ getSkillLevelText(averageSkillLevel) }}
+              <div class="p-4 bg-green-50 rounded-lg">
+                <div class="font-semibold text-2xl text-green-600 flex items-center justify-center gap-2">
+                  <span>{{ averageSkillLevel.toFixed(1) }}/10</span>
+                  <span class="text-lg">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
+                </div>
+                <div :class="['text-sm font-medium', getSkillLevelColor(averageSkillLevel)]">
+                  {{ getSkillLevelText(averageSkillLevel) }}
+                </div>
+              </div>
+              <div class="p-4 bg-purple-50 rounded-lg">
+                <div class="font-semibold text-2xl text-purple-600">{{ expertSkillsCount }}</div>
+                <div class="text-purple-800 text-sm">Expert Level</div>
               </div>
             </div>
-            <div>
-              <div class="font-semibold text-gray-800">{{ expertSkillsCount }}</div>
-              <div class="text-gray-600 text-xs">Expert Level</div>
+            <div v-if="store.aspirationalSkills.length > 0" class="mt-4 p-4 bg-yellow-50 rounded-lg text-center">
+              <div class="font-semibold text-xl text-yellow-600">{{ store.aspirationalSkills.length }}</div>
+              <div class="text-yellow-800 text-sm">Learning Goals</div>
+              <router-link
+                to="/skills"
+                class="text-yellow-600 hover:text-yellow-800 text-xs mt-1 block"
+              >
+                View learning roadmap →
+              </router-link>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Today's tasks overview -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Tasks</h2>
-          <div v-if="todaysTasks.length > 0" class="space-y-2">
-            <div
-              v-for="task in todaysTasks.slice(0, 5)"
-              :key="task.id"
-              class="flex items-center gap-3 p-2 bg-gray-50 rounded"
-            >
-              <input
-                type="checkbox"
-                :checked="task.completed"
-                @change="store.toggleTask(task.id)"
-                class="w-4 h-4 text-blue-600 rounded"
-              />
-              <span
-                :class="[
-                  'flex-1',
-                  task.completed ? 'line-through text-gray-500' : 'text-gray-800'
-                ]"
-              >
-                {{ task.text }}
-              </span>
+      <!-- Quick Action Buttons -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <!-- Tasks Button -->
+        <router-link
+          to="/tasks"
+          class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow group"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-gray-800">Quick Tasks</h3>
+              <p class="text-sm text-gray-600">{{ todaysCompleted }}/{{ todaysTotal }} completed</p>
             </div>
-            <router-link
-              to="/tasks"
-              class="block text-center text-blue-500 hover:text-blue-700 text-sm mt-4"
-            >
-              View all tasks →
-            </router-link>
+            <div class="text-blue-500 text-2xl group-hover:scale-110 transition-transform">📝</div>
           </div>
-          <div v-else class="text-center py-8 text-gray-500">
-            <p class="mb-4">No tasks for today</p>
-            <router-link
-              to="/tasks"
-              class="inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Add Tasks
-            </router-link>
-          </div>
-        </div>
-        
-        <!-- Quick mood and journal -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Mood and Journal side by side -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Mood quick entry -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">How are you feeling?</h2>
-            <div v-if="!todaysMood" class="text-center">
-              <p class="text-gray-600 mb-4">Track your mood for today</p>
-              <router-link
-                to="/mood"
-                class="inline-block px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                Set Today's Mood
-              </router-link>
-            </div>
-            <div v-else class="text-center">
-              <div class="text-4xl mb-2">{{ getMoodEmoji(todaysMood.mood) }}</div>
-              <p class="text-lg font-semibold">{{ getMoodText(todaysMood.mood) }}</p>
-              <p class="text-gray-600">{{ todaysMood.mood }}/10</p>
-              <router-link
-                to="/mood"
-                class="text-blue-500 hover:text-blue-700 text-sm"
-              >
-                Update mood →
-              </router-link>
-            </div>
-          </div>
-          
-          <!-- Journal quick entry -->
-          <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Today's Journal</h2>
-            <div v-if="!todaysJournal" class="text-center">
-              <p class="text-gray-600 mb-4">Write about your day</p>
-              <router-link
-                to="/journal"
-                class="inline-block px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-              >
-                Write Entry
-              </router-link>
-            </div>
-            <div v-else>
-              <p class="text-gray-600 mb-3 line-clamp-3">
-                {{ todaysJournal.content.substring(0, 150) }}
-                {{ todaysJournal.content.length > 150 ? '...' : '' }}
+        </router-link>
+
+        <!-- Mood Button -->
+        <router-link
+          to="/mood"
+          class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow group"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-gray-800">Mood Tracker</h3>
+              <p class="text-sm text-gray-600">
+                {{ todaysMood ? `${getMoodText(todaysMood.mood)} (${todaysMood.mood}/10)` : 'Not set today' }}
               </p>
-              <router-link
-                to="/journal"
-                class="text-blue-500 hover:text-blue-700 text-sm"
-              >
-                Continue writing →
-              </router-link>
+            </div>
+            <div class="text-2xl group-hover:scale-110 transition-transform">
+              {{ todaysMood ? getMoodEmoji(todaysMood.mood) : '😐' }}
             </div>
           </div>
+        </router-link>
+
+        <!-- Journal Button -->
+        <router-link
+          to="/journal"
+          class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow group"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-gray-800">Today's Journal</h3>
+              <p class="text-sm text-gray-600">
+                {{ todaysJournal ? 'Entry written' : 'Write your thoughts' }}
+              </p>
+            </div>
+            <div class="text-purple-500 text-2xl group-hover:scale-110 transition-transform">
+              {{ todaysJournal ? '📔' : '📝' }}
+            </div>
           </div>
-        </div>
+        </router-link>
       </div>
       
       <!-- Recent activity -->
@@ -324,12 +295,12 @@ const recentCompletedTasks = computed(() => {
 
 const averageSkillLevel = computed(() => {
   if (store.skills.length === 0) return 0
-  const sum = store.skills.reduce((total, skill) => total + skill.proficiency, 0)
+  const sum = store.skills.reduce((total, skill) => total + Number(skill.proficiency), 0)
   return sum / store.skills.length
 })
 
 const expertSkillsCount = computed(() => {
-  return store.skills.filter(skill => skill.proficiency >= 8).length
+  return store.skills.filter(skill => Number(skill.proficiency) >= 8).length
 })
 
 function getCurrentGreeting(): string {

@@ -612,12 +612,12 @@ const displayCategories = computed(() => {
 })
 
 const expertSkills = computed(() => {
-  return store.skills.filter(skill => skill.proficiency >= 8).length
+  return store.skills.filter(skill => Number(skill.proficiency) >= 8).length
 })
 
 const averageProficiency = computed(() => {
   if (store.skills.length === 0) return 0
-  const sum = store.skills.reduce((total, skill) => total + skill.proficiency, 0)
+  const sum = store.skills.reduce((total, skill) => total + Number(skill.proficiency), 0)
   return sum / store.skills.length
 })
 
@@ -669,7 +669,7 @@ function saveSkill() {
       editingSkill.value.id,
       editingSkill.value.name.trim(),
       editingSkill.value.category,
-      editingSkill.value.proficiency || 5,
+      Number(editingSkill.value.proficiency) || 5,
       editingSkill.value.description?.trim(),
       editingSkill.value.learningGoals?.trim()
     )
@@ -678,7 +678,7 @@ function saveSkill() {
     store.addSkill(
       editingSkill.value.name.trim(),
       editingSkill.value.category,
-      editingSkill.value.proficiency || 5,
+      Number(editingSkill.value.proficiency) || 5,
       editingSkill.value.description?.trim(),
       editingSkill.value.learningGoals?.trim()
     )
