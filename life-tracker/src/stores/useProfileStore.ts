@@ -44,6 +44,19 @@ export interface Skill {
   updatedAt: string
 }
 
+export interface AspirationalSkill {
+  id: string
+  name: string
+  category: string
+  priority: 'Low' | 'Medium' | 'High'
+  reason?: string
+  targetProficiency?: number
+  targetDate?: string
+  resources?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export const useProfileStore = defineStore('profile', {
   state: () => ({
     tasks: [] as Task[],
@@ -51,6 +64,7 @@ export const useProfileStore = defineStore('profile', {
     moods: [] as MoodEntry[],
     knowledge: [] as KnowledgeEntry[],
     skills: [] as Skill[],
+    aspirationalSkills: [] as AspirationalSkill[],
     userProfile: {
       firstName: '',
       lastName: '',
@@ -63,7 +77,8 @@ export const useProfileStore = defineStore('profile', {
       averageMood: 0,
       journalEntries: 0,
       knowledgeEntries: 0,
-      totalSkills: 0
+      totalSkills: 0,
+      aspirationalSkills: 0
     }
   }),
   
@@ -194,6 +209,60 @@ export const useProfileStore = defineStore('profile', {
     removeSkill(id: string) {
       this.skills = this.skills.filter(s => s.id !== id)
       this.saveToLocalStorage()
+    },
+
+    // Aspirational Skills management
+    addAspirationalSkill(name: string, category: string, priority: 'Low' | 'Medium' | 'High', reason?: string, targetProficiency?: number, targetDate?: string, resources?: string) {
+      const aspirationalSkill: AspirationalSkill = {
+        id: Date.now().toString(),
+        name,
+        category,
+        priority,
+        reason,
+        targetProficiency,
+        targetDate,
+        resources,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      this.aspirationalSkills.push(aspirationalSkill)
+      this.saveToLocalStorage()
+    },
+
+    updateAspirationalSkill(id: string, name: string, category: string, priority: 'Low' | 'Medium' | 'High', reason?: string, targetProficiency?: number, targetDate?: string, resources?: string) {
+      const aspirationalSkill = this.aspirationalSkills.find(s => s.id === id)
+      if (aspirationalSkill) {
+        aspirationalSkill.name = name
+        aspirationalSkill.category = category
+        aspirationalSkill.priority = priority
+        aspirationalSkill.reason = reason
+        aspirationalSkill.targetProficiency = targetProficiency
+        aspirationalSkill.targetDate = targetDate
+        aspirationalSkill.resources = resources
+        aspirationalSkill.updatedAt = new Date().toISOString()
+        this.saveToLocalStorage()
+      }
+    },
+
+    removeAspirationalSkill(id: string) {
+      this.aspirationalSkills = this.aspirationalSkills.filter(s => s.id !== id)
+      this.saveToLocalStorage()
+    },
+
+    convertAspirationalToSkill(aspirationalSkillId: string, initialProficiency: number = 1) {
+      const aspirationalSkill = this.aspirationalSkills.find(s => s.id === aspirationalSkillId)
+      if (aspirationalSkill) {
+        // Add as a regular skill
+        this.addSkill(
+          aspirationalSkill.name,
+          aspirationalSkill.category,
+          initialProficiency,
+          `Started learning: ${aspirationalSkill.reason || ''}`,
+          aspirationalSkill.reason
+        )
+        // Remove from aspirational skills
+        this.removeAspirationalSkill(aspirationalSkillId)
+      }
     },    // Storage management
     saveToLocalStorage() {
       try {
@@ -225,6 +294,7 @@ export const useProfileStore = defineStore('profile', {
       this.stats.journalEntries = Object.keys(this.journal).length
       this.stats.knowledgeEntries = this.knowledge.length
       this.stats.totalSkills = this.skills.length
+      this.stats.aspirationalSkills = this.aspirationalSkills.length
     },
     
     // User profile management

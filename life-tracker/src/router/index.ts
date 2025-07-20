@@ -7,6 +7,7 @@ import Stats from '../views/Stats.vue'
 import Knowledge from '../views/Knowledge.vue'
 import Profile from '../views/Profile.vue'
 import Skills from '../views/SkillsView.vue'
+import Data from '../views/DataView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,11 @@ const router = createRouter({
       path: '/skills',
       name: 'skills',
       component: Skills,
+    },
+    {
+      path: '/data',
+      name: 'data',
+      component: Data,
     },
   ],
 })
