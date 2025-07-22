@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { JsonStorage, type LifeTrackerData } from '@/utils/jsonStorage'
 
 export interface Task {
   id: string
@@ -263,10 +264,12 @@ export const useProfileStore = defineStore('profile', {
         // Remove from aspirational skills
         this.removeAspirationalSkill(aspirationalSkillId)
       }
-    },    // Storage management
+    },
+
+    // Storage management
     saveToLocalStorage() {
       try {
-        localStorage.setItem('profileData', JSON.stringify(this.$state))
+        JsonStorage.saveData(this.$state)
       } catch (error) {
         console.error('Failed to save to localStorage:', error)
       }
@@ -274,19 +277,25 @@ export const useProfileStore = defineStore('profile', {
     
     loadFromLocalStorage() {
       try {
-        const data = localStorage.getItem('profileData')
+        const data = JsonStorage.loadData()
         if (data) {
-          const parsed = JSON.parse(data)
-          
           // Data migration: ensure proficiency values are numbers
-          if (parsed.skills) {
-            parsed.skills = parsed.skills.map((skill: any) => ({
+          if (data.skills) {
+            data.skills = data.skills.map((skill: any) => ({
               ...skill,
               proficiency: Number(skill.proficiency) || 5
             }))
           }
           
-          Object.assign(this, parsed)
+          // Update state with loaded data
+          this.tasks = data.tasks || []
+          this.journal = data.journal || {}
+          this.moods = data.moods || []
+          this.knowledge = data.knowledge || []
+          this.skills = data.skills || []
+          this.aspirationalSkills = data.aspirationalSkills || []
+          this.userProfile = data.userProfile || this.userProfile
+          this.stats = data.stats || this.stats
           this.updateStats()
         }
       } catch (error) {
@@ -320,6 +329,68 @@ export const useProfileStore = defineStore('profile', {
     updateUserProfile(profile: Partial<UserProfile>) {
       Object.assign(this.userProfile, profile)
       this.saveToLocalStorage()
+    },
+
+    // JSON Export/Import methods
+    exportToJsonFile(filename?: string) {
+      JsonStorage.exportToFile(this.$state, filename)
+    },
+
+    async importFromJsonFile(file: File): Promise<{ success: boolean; message: string }> {
+      try {
+        const data = await JsonStorage.importFromFile(file)
+        
+        // Update state with imported data
+        this.tasks = data.tasks || []
+        this.journal = data.journal || {}
+        this.moods = data.moods || []
+        this.knowledge = data.knowledge || []
+        this.skills = data.skills || []
+        this.aspirationalSkills = data.aspirationalSkills || []
+        this.userProfile = { ...this.userProfile, ...data.userProfile }
+        
+        // Save to localStorage
+        this.saveToLocalStorage()
+        this.updateStats()
+        
+        return {
+          success: true,
+          message: `Successfully imported data from ${file.name}`
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Failed to import data'
+        }
+      }
+    },
+
+    clearAllData() {
+      // Reset state to initial values
+      this.tasks = []
+      this.journal = {}
+      this.moods = []
+      this.knowledge = []
+      this.skills = []
+      this.aspirationalSkills = []
+      this.userProfile = {
+        firstName: '',
+        lastName: '',
+        birthTimestamp: '',
+        createdAt: new Date().toISOString()
+      }
+      this.stats = {
+        totalTasks: 0,
+        completedTasks: 0,
+        averageMood: 0,
+        journalEntries: 0,
+        knowledgeEntries: 0,
+        totalSkills: 0,
+        aspirationalSkills: 0
+      }
+      
+      // Clear localStorage
+      JsonStorage.clearData()
     }
   }
 })
