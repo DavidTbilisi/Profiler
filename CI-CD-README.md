@@ -49,7 +49,7 @@ The pipeline includes comprehensive monitoring:
 
 The project is automatically deployed to GitHub Pages when changes are pushed to the main branch. 
 
-**Deployment URL**: `https://DavidTbilisi.github.io/Profiler/`
+**Deployment URL**: `https://DavidTbilisi.github.io/Profiler/public/`
 
 ### Project Structure
 ```
@@ -76,6 +76,20 @@ npm run preview
 ```
 
 The build process creates optimized files in `life-tracker/dist/` which are automatically deployed to GitHub Pages.
+
+### 📁 **File Structure on GitHub Pages:**
+```
+https://DavidTbilisi.github.io/Profiler/public/
+├── index.html              # Main application entry
+├── 404.html               # SPA routing fallback
+├── favicon.ico            # Site icon
+├── .nojekyll             # Prevents Jekyll processing
+└── assets/               # Generated CSS/JS bundles
+    ├── index-[hash].js
+    ├── vendor-[hash].js
+    ├── charts-[hash].js
+    └── index-[hash].css
+```
 
 ## 🔧 Configuration
 
