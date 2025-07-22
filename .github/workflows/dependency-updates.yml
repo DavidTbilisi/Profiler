@@ -1,4 +1,9 @@
-name: 🔄 Dependency Updates
+name: 🔄 Dependency      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.jsones
 
 on:
   schedule:

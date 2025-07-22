@@ -19,8 +19,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    // Add rollup options for better compatibility
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          charts: ['chart.js', 'vue-chartjs']
+        }
+      }
+    }
   },
   preview: {
     port: 4173,
+  },
+  // Define global to avoid issues with some packages
+  define: {
+    global: 'globalThis',
   },
 })
