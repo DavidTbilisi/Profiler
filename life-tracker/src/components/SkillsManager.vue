@@ -153,7 +153,7 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select Category</option>
-            <option v-for="category in skillCategories" :key="category" :value="category">
+            <option v-for="category in SKILL_CATEGORIES" :key="category" :value="category">
               {{ category }}
             </option>
           </select>
@@ -397,7 +397,7 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="">Select Category</option>
-              <option v-for="category in skillCategories" :key="category" :value="category">
+              <option v-for="category in SKILL_CATEGORIES" :key="category" :value="category">
                 {{ category }}
               </option>
             </select>
@@ -633,6 +633,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProfileStore, type Skill, type AspirationalSkill } from '@/stores/useProfileStore'
+import { SKILL_CATEGORIES, getCategoryIcon } from '@/constants/skillCategories'
 
 const store = useProfileStore()
 const activeTab = ref<'current' | 'aspirational'>('current')
@@ -657,20 +658,6 @@ const editingAspirationalSkill = ref<Partial<AspirationalSkill>>({
   targetDate: '',
   resources: ''
 })
-
-const skillCategories = [
-  'Programming & Development',
-  'Design & Creative',
-  'Data & Analytics',
-  'Marketing & Sales',
-  'Communication',
-  'Leadership & Management',
-  'Languages',
-  'Technical Skills',
-  'Soft Skills',
-  'Finance & Business',
-  'Other'
-]
 
 const filteredSkills = computed(() => {
   let skills = store.skills
@@ -962,23 +949,6 @@ function getProficiencyColor(level: number): string {
   if (level <= 5) return 'bg-yellow-500'
   if (level <= 7) return 'bg-blue-500'
   return 'bg-green-500'
-}
-
-function getCategoryIcon(category: string): string {
-  const icons: Record<string, string> = {
-    'Programming & Development': '💻',
-    'Design & Creative': '🎨',
-    'Data & Analytics': '📊',
-    'Marketing & Sales': '📈',
-    'Communication': '💬',
-    'Leadership & Management': '👥',
-    'Languages': '🌍',
-    'Technical Skills': '🔧',
-    'Soft Skills': '🤝',
-    'Finance & Business': '💼',
-    'Other': '🎯'
-  }
-  return icons[category] || '🎯'
 }
 
 function formatDate(dateString: string): string {

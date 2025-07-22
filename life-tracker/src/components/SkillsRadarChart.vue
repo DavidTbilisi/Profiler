@@ -33,6 +33,7 @@ import {
 } from 'chart.js'
 import { Radar } from 'vue-chartjs'
 import { useProfileStore } from '@/stores/useProfileStore'
+import { SKILL_CATEGORIES } from '@/constants/skillCategories'
 
 ChartJS.register(
   RadialLinearScale,
@@ -56,24 +57,11 @@ function getProficiencyText(level: number): string {
   return 'Expert'
 }
 
-const skillCategories = [
-  'Programming & Development',
-  'Design & Creative',
-  'Data & Analytics',
-  'Marketing & Sales',
-  'Communication',
-  'Leadership & Management',
-  'Languages',
-  'Technical Skills',
-  'Soft Skills',
-  'Finance & Business'
-]
-
 const chartData = computed(() => {
   if (!hasSkills.value) return { labels: [], datasets: [] }
 
   // Calculate average proficiency for each category
-  const categoryAverages = skillCategories.map(category => {
+  const categoryAverages = SKILL_CATEGORIES.map(category => {
     const categorySkills = store.skills.filter(skill => skill.category === category)
     if (categorySkills.length === 0) return 0
     
@@ -85,7 +73,7 @@ const chartData = computed(() => {
   const activeCategories: string[] = []
   const activeAverages: number[] = []
   
-  skillCategories.forEach((category, index) => {
+  SKILL_CATEGORIES.forEach((category, index) => {
     if (categoryAverages[index] > 0) {
       activeCategories.push(category)
       activeAverages.push(categoryAverages[index])
@@ -93,8 +81,8 @@ const chartData = computed(() => {
   })
 
   // If we have fewer than 3 categories, add some padding for better visualization
-  while (activeCategories.length < 3 && activeCategories.length < skillCategories.length) {
-    const nextCategory = skillCategories.find(cat => !activeCategories.includes(cat))
+  while (activeCategories.length < 3 && activeCategories.length < SKILL_CATEGORIES.length) {
+    const nextCategory = SKILL_CATEGORIES.find(cat => !activeCategories.includes(cat))
     if (nextCategory) {
       activeCategories.push(nextCategory)
       activeAverages.push(0)
