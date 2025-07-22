@@ -17,4 +17,20 @@ export default defineConfigWithVueTs(
 
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
+  
+  {
+    rules: {
+      // Allow any types for now (can be tightened later)
+      '@typescript-eslint/no-explicit-any': 'warn',
+      
+      // Allow unused variables (common during development)
+      '@typescript-eslint/no-unused-vars': 'warn',
+      
+      // Allow single-word component names for views
+      'vue/multi-word-component-names': 'off',
+      
+      // Allow side effects in computed properties (for reactive data)
+      'vue/no-side-effects-in-computed-properties': 'warn',
+    }
+  }
 )

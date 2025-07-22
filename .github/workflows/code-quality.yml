@@ -32,8 +32,8 @@ jobs:
       - name: 🔍 Run ESLint with detailed output
         working-directory: ./life-tracker
         run: |
-          npm run lint -- --format=json --output-file=eslint-report.json || true
-          npm run lint
+          npm run lint:check -- --format=json --output-file=eslint-report.json || true
+          npm run lint:check
 
       - name: 📊 TypeScript strict check
         working-directory: ./life-tracker

@@ -19,7 +19,7 @@ jobs:
       - name: 📚 Checkout code
         uses: actions/checkout@v4
 
-      - name:  Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -32,7 +32,7 @@ jobs:
 
       - name: 🔍 Run ESLint
         working-directory: ./life-tracker
-        run: npm run lint
+        run: npm run lint:check
 
       - name: 🎨 Check TypeScript types
         working-directory: ./life-tracker
@@ -57,7 +57,7 @@ jobs:
       - name: 📚 Checkout code
         uses: actions/checkout@v4
 
-      - name:  Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -89,7 +89,7 @@ jobs:
       - name: 📚 Checkout code
         uses: actions/checkout@v4
 
-      - name:  Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -124,7 +124,7 @@ jobs:
       - name: 📚 Checkout code
         uses: actions/checkout@v4
 
-      - name:  Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
