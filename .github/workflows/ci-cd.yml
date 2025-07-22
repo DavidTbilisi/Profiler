@@ -141,6 +141,10 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: 📄 Add .nojekyll file
+        working-directory: ./life-tracker
+        run: touch dist/.nojekyll
+
       - name: 📄 Setup Pages
         uses: actions/configure-pages@v4
 

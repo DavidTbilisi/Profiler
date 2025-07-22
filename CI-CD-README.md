@@ -47,7 +47,20 @@ The pipeline includes comprehensive monitoring:
 
 ## 🛠️ Development
 
-The project is automatically deployed to GitHub Pages when changes are pushed to the main branch. The deployment URL will be available in the repository settings under Pages.
+The project is automatically deployed to GitHub Pages when changes are pushed to the main branch. 
+
+**Deployment URL**: `https://DavidTbilisi.github.io/Profiler/`
+
+### Project Structure
+```
+Profiler/                    # Repository root
+├── .github/workflows/       # CI/CD workflows
+├── life-tracker/           # Vue.js application
+│   ├── src/                # Application source code
+│   ├── dist/               # Build output (deployed to GitHub Pages)
+│   └── package.json        # Node.js dependencies
+└── CI-CD-README.md         # This documentation
+```
 
 ### Local Development
 ```bash
@@ -61,6 +74,8 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+The build process creates optimized files in `life-tracker/dist/` which are automatically deployed to GitHub Pages.
 
 ## 🔧 Configuration
 
