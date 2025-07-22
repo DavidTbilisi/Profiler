@@ -65,7 +65,12 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600">Skill Points</p>
-              <p class="text-2xl font-bold text-gray-900">{{ totalSkillPoints }}</p>
+              <p 
+                class="text-2xl font-bold text-gray-900 cursor-help" 
+                :title="`Formula: ${currentSkillPoints} current points + ${totalSkillPoints - currentSkillPoints} aspirational points = ${totalSkillPoints} total points`"
+              >
+                {{ totalSkillPoints }}
+              </p>
             </div>
             <div class="text-green-500 text-3xl">🎯</div>
           </div>
@@ -80,7 +85,12 @@
             </div>
             <div class="flex items-center justify-between text-xs">
               <span class="text-gray-500">Max Possible:</span>
-              <span class="font-medium text-blue-600">{{ maxPossiblePoints }}</span>
+              <span 
+                class="font-medium text-blue-600 cursor-help" 
+                :title="`Formula: (${store.skills.length} current + ${store.aspirationalSkills.length} aspirational) × 10 = ${maxPossiblePoints} points`"
+              >
+                {{ maxPossiblePoints }}
+              </span>
             </div>
             <div v-if="store.skills.length > 0" class="flex items-center justify-between text-xs pt-1 border-t">
               <span class="text-gray-500">Avg Level:</span>

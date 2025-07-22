@@ -33,17 +33,32 @@
       <h3 class="text-lg font-semibold text-gray-800 mb-3">📊 Skills Points Overview</h3>
       <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
         <div class="p-3 bg-white rounded-lg shadow-sm border">
-          <div class="text-3xl font-bold text-indigo-600">{{ totalSkillPoints }}</div>
+          <div 
+            class="text-3xl font-bold text-indigo-600 cursor-help" 
+            :title="`Formula: ${currentSkillPoints} current points + ${aspirationalSkillPoints} aspirational points = ${totalSkillPoints} total points`"
+          >
+            {{ totalSkillPoints }}
+          </div>
           <div class="text-sm text-indigo-800 font-medium">Total Points</div>
           <div class="text-xs text-gray-500 mt-1">Current + Goals</div>
         </div>
         <div class="p-3 bg-white rounded-lg shadow-sm border">
-          <div class="text-2xl font-bold text-blue-600">{{ currentSkillPoints }}</div>
+          <div 
+            class="text-2xl font-bold text-blue-600 cursor-help" 
+            :title="`Sum of proficiency levels: ${store.skills.map(s => s.name + ' (' + s.proficiency + '/10)').join(', ') || 'No current skills'}`"
+          >
+            {{ currentSkillPoints }}
+          </div>
           <div class="text-sm text-blue-800">Current Points</div>
           <div class="text-xs text-gray-500 mt-1">{{ store.skills.length }} skills</div>
         </div>
         <div class="p-3 bg-white rounded-lg shadow-sm border">
-          <div class="text-2xl font-bold text-purple-600">{{ aspirationalSkillPoints }}</div>
+          <div 
+            class="text-2xl font-bold text-purple-600 cursor-help" 
+            :title="`Sum of target proficiency levels: ${store.aspirationalSkills.map(s => s.name + ' (target ' + (s.targetProficiency || 7) + '/10)').join(', ') || 'No aspirational skills'}`"
+          >
+            {{ aspirationalSkillPoints }}
+          </div>
           <div class="text-sm text-purple-800">Goal Points</div>
           <div class="text-xs text-gray-500 mt-1">{{ store.aspirationalSkills.length }} goals</div>
         </div>
@@ -58,7 +73,12 @@
           <div class="text-xs text-gray-500 mt-1">No skills yet</div>
         </div>
         <div class="p-3 bg-white rounded-lg shadow-sm border">
-          <div class="text-2xl font-bold text-orange-600">{{ maxPossiblePoints }}</div>
+          <div 
+            class="text-2xl font-bold text-orange-600 cursor-help" 
+            :title="`Formula: (${store.skills.length} current + ${store.aspirationalSkills.length} aspirational) × 10 = ${maxPossiblePoints} points`"
+          >
+            {{ maxPossiblePoints }}
+          </div>
           <div class="text-sm text-orange-800">Max Possible</div>
           <div class="text-xs text-gray-500 mt-1">{{ Math.round((totalSkillPoints / maxPossiblePoints) * 100) }}% achieved</div>
         </div>
