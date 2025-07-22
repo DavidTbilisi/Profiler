@@ -119,7 +119,7 @@
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Categories</option>
-          <option v-for="category in skillCategories" :key="category" :value="category">
+          <option v-for="category in SKILL_CATEGORIES" :key="category" :value="category">
             {{ category }}
           </option>
         </select>
@@ -344,7 +344,7 @@
           <div class="text-sm text-yellow-800">Avg. Proficiency</div>
         </div>
         <div class="p-3 bg-purple-50 rounded-lg">
-          <div class="text-2xl font-bold text-purple-600">{{ skillCategories.length }}</div>
+          <div class="text-2xl font-bold text-purple-600">{{ SKILL_CATEGORIES.length }}</div>
           <div class="text-sm text-purple-800">Categories</div>
         </div>
       </div>
