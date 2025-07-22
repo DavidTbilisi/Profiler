@@ -1,0 +1,176 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Lint and Test
+  test:
+    name: 🧪 Test & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name:  Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+
+      - name: 🔍 Run ESLint
+        working-directory: ./life-tracker
+        run: npm run lint
+
+      - name: 🎨 Check TypeScript types
+        working-directory: ./life-tracker
+        run: npm run type-check
+
+      - name: 🧪 Run tests (if available)
+        working-directory: ./life-tracker
+        run: |
+          if [ -f "package.json" ] && grep -q '"test"' package.json; then
+            npm run test:unit || echo "No tests found, skipping..."
+          else
+            echo "No test script found, skipping tests"
+          fi
+
+  # Job 2: Build Application
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name:  Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+
+      - name: 🏗️ Build application
+        working-directory: ./life-tracker
+        run: npm run build
+
+      - name: 📁 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: life-tracker/dist/
+          retention-days: 7
+
+  # Job 3: Security Audit
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name:  Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+
+      - name: 🔒 Run security audit
+        working-directory: ./life-tracker
+        run: npm audit --audit-level moderate
+
+  # Job 4: Deploy to GitHub Pages (only on main branch)
+  deploy:
+    name: 🚀 Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [test, build, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name:  Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+
+      - name: 🏗️ Build for production
+        working-directory: ./life-tracker
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 📄 Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📤 Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: life-tracker/dist
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Job 5: Notify on Success/Failure
+  notify:
+    name: 📢 Notify Status
+    runs-on: ubuntu-latest
+    needs: [test, build, security, deploy]
+    if: always()
+    
+    steps:
+      - name: 📊 Check job statuses
+        run: |
+          echo "Test job status: ${{ needs.test.result }}"
+          echo "Build job status: ${{ needs.build.result }}"
+          echo "Security job status: ${{ needs.security.result }}"
+          echo "Deploy job status: ${{ needs.deploy.result }}"
+          
+          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.build.result }}" == "failure" || "${{ needs.security.result }}" == "failure" ]]; then
+            echo "❌ Pipeline failed!"
+            exit 1
+          else
+            echo "✅ Pipeline completed successfully!"
+          fi

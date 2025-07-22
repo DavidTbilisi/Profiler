@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+      
+      - name: Build
+        working-directory: ./life-tracker
+        run: npm run build
+        env:
+          NODE_ENV: production
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+            cat CHANGELOG.md | head -50 >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "CHANGELOG_CONTENT=No changelog available" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## Changes
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+            
+            ## Deployment
+            This release has been automatically deployed to GitHub Pages.
+          draft: false
+          prerelease: false
+      
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: life-tracker/dist
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

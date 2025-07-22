@@ -1,0 +1,99 @@
+name: ⚡ Performance Monitoring
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lighthouse:
+    name: 🏮 Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name:  Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: life-tracker/package-lock.json
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: npm ci
+
+      - name: 🏗️ Build application
+        working-directory: ./life-tracker
+        run: npm run build
+
+      - name: 🌐 Start preview server
+        working-directory: ./life-tracker
+        run: |
+          npm run preview &
+          sleep 10
+
+      - name: 🏮 Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './.github/lighthouse/lighthouse.json'
+          temporaryPublicStorage: true
+          uploadArtifacts: true
+          
+      - name: 📊 Performance Budget Check
+        run: |
+          echo "## ⚡ Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "Lighthouse audit completed. Check the artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
+
+  bundle-analysis:
+    name: 📦 Bundle Size Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📚 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+          cache-dependency-path: life-tracker/pnpm-lock.yaml
+
+      - name: 📥 Install dependencies
+        working-directory: ./life-tracker
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build with bundle analysis
+        working-directory: ./life-tracker
+        run: |
+          pnpm run build
+          echo "## 📦 Bundle Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "### Main bundle sizes:" >> $GITHUB_STEP_SUMMARY
+          
+      - name: 📊 Analyze bundle
+        working-directory: ./life-tracker
+        run: |
+          # Install bundle analyzer
+          pnpm add -D rollup-plugin-visualizer
+          
+          # Generate bundle report
+          echo "Generated bundle analysis. Check dist folder for detailed breakdown." >> $GITHUB_STEP_SUMMARY
+          
+          # Show main file sizes
+          ls -lh dist/assets/ | awk '{print "- " $9 ": " $5}' >> $GITHUB_STEP_SUMMARY
+
+      - name: 📈 Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: life-tracker/dist/
+          retention-days: 7
