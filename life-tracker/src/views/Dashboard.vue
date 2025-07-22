@@ -64,24 +64,31 @@
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-600">Skills Portfolio</p>
-              <p class="text-2xl font-bold text-gray-900">{{ store.skills.length }} Skills</p>
+              <p class="text-sm font-medium text-gray-600">Skill Points</p>
+              <p class="text-2xl font-bold text-gray-900">{{ totalSkillPoints }}</p>
             </div>
             <div class="text-green-500 text-3xl">🎯</div>
           </div>
-          <div v-if="store.skills.length > 0" class="mt-2 flex items-center justify-between">
-            <p class="text-xs text-gray-500">
-              {{ averageSkillLevel.toFixed(1) }}/10
-            </p>
-            <div class="flex items-center gap-1">
-              <span class="text-sm">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
-              <span :class="['text-xs font-medium', getSkillLevelColor(averageSkillLevel)]">
-                {{ getSkillLevelText(averageSkillLevel) }}
-              </span>
+          <div class="mt-2 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-500">Skills Count:</span>
+              <span class="font-medium text-green-600">{{ store.skills.length + store.aspirationalSkills.length }}</span>
             </div>
-          </div>
-          <div v-else class="mt-2">
-            <p class="text-xs text-gray-500">No skills tracked yet</p>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-500">Current Points:</span>
+              <span class="font-medium text-green-600">{{ currentSkillPoints }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-500">Max Possible:</span>
+              <span class="font-medium text-blue-600">{{ maxPossiblePoints }}</span>
+            </div>
+            <div v-if="store.skills.length > 0" class="flex items-center justify-between text-xs pt-1 border-t">
+              <span class="text-gray-500">Avg Level:</span>
+              <div class="flex items-center gap-1">
+                <span class="font-medium">{{ averageSkillLevel.toFixed(1) }}/10</span>
+                <span class="text-sm">{{ getSkillLevelEmoji(averageSkillLevel) }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -324,6 +331,24 @@ const averageSkillLevel = computed(() => {
 
 const expertSkillsCount = computed(() => {
   return store.skills.filter(skill => Number(skill.proficiency) >= 8).length
+})
+
+// Skill points calculations
+const currentSkillPoints = computed(() => {
+  return store.skills.reduce((total, skill) => total + Number(skill.proficiency), 0)
+})
+
+const totalSkillPoints = computed(() => {
+  const currentPoints = store.skills.reduce((total, skill) => total + Number(skill.proficiency), 0)
+  // Aspirational skills are counted as potential points (assume target proficiency of 7 if not specified)
+  const aspirationalPoints = store.aspirationalSkills.reduce((total, skill) => {
+    return total + (Number(skill.targetProficiency) || 7)
+  }, 0)
+  return currentPoints + aspirationalPoints
+})
+
+const maxPossiblePoints = computed(() => {
+  return (store.skills.length + store.aspirationalSkills.length) * 10
 })
 
 function getCurrentGreeting(): string {

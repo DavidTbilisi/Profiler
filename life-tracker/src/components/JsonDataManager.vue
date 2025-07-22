@@ -191,8 +191,16 @@
                 <span class="font-medium">{{ store.moods.length }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Skills:</span>
+                <span>Current Skills:</span>
                 <span class="font-medium">{{ store.skills.length }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Aspirational Skills:</span>
+                <span class="font-medium">{{ store.aspirationalSkills.length }}</span>
+              </div>
+              <div class="flex justify-between border-t pt-2 mt-2">
+                <span class="font-semibold">Total Skills:</span>
+                <span class="font-bold text-blue-600">{{ store.skills.length + store.aspirationalSkills.length }}</span>
               </div>
               <div class="flex justify-between">
                 <span>Knowledge Entries:</span>

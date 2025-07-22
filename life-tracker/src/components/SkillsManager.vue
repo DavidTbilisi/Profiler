@@ -28,6 +28,43 @@
       </div>
     </div>
 
+    <!-- Overall Skills Summary -->
+    <div v-if="store.skills.length > 0 || store.aspirationalSkills.length > 0" class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-800 mb-3">📊 Skills Points Overview</h3>
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
+        <div class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-3xl font-bold text-indigo-600">{{ totalSkillPoints }}</div>
+          <div class="text-sm text-indigo-800 font-medium">Total Points</div>
+          <div class="text-xs text-gray-500 mt-1">Current + Goals</div>
+        </div>
+        <div class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-2xl font-bold text-blue-600">{{ currentSkillPoints }}</div>
+          <div class="text-sm text-blue-800">Current Points</div>
+          <div class="text-xs text-gray-500 mt-1">{{ store.skills.length }} skills</div>
+        </div>
+        <div class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-2xl font-bold text-purple-600">{{ aspirationalSkillPoints }}</div>
+          <div class="text-sm text-purple-800">Goal Points</div>
+          <div class="text-xs text-gray-500 mt-1">{{ store.aspirationalSkills.length }} goals</div>
+        </div>
+        <div v-if="store.skills.length > 0" class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-2xl font-bold text-green-600">{{ averageProficiency.toFixed(1) }}</div>
+          <div class="text-sm text-green-800">Avg. Level</div>
+          <div class="text-xs text-gray-500 mt-1">Per skill</div>
+        </div>
+        <div v-else class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-2xl font-bold text-gray-400">--</div>
+          <div class="text-sm text-gray-500">Avg. Level</div>
+          <div class="text-xs text-gray-500 mt-1">No skills yet</div>
+        </div>
+        <div class="p-3 bg-white rounded-lg shadow-sm border">
+          <div class="text-2xl font-bold text-orange-600">{{ maxPossiblePoints }}</div>
+          <div class="text-sm text-orange-800">Max Possible</div>
+          <div class="text-xs text-gray-500 mt-1">{{ Math.round((totalSkillPoints / maxPossiblePoints) * 100) }}% achieved</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Current Skills Tab -->
     <div v-if="activeTab === 'current'">
       <div class="flex justify-between items-center mb-6">
@@ -635,6 +672,25 @@ const upcomingDeadlines = computed(() => {
 
 const withResourcesCount = computed(() => {
   return store.aspirationalSkills.filter(skill => skill.resources && skill.resources.trim().length > 0).length
+})
+
+// Skill points calculations
+const currentSkillPoints = computed(() => {
+  return store.skills.reduce((total, skill) => total + Number(skill.proficiency), 0)
+})
+
+const aspirationalSkillPoints = computed(() => {
+  return store.aspirationalSkills.reduce((total, skill) => {
+    return total + (Number(skill.targetProficiency) || 7)
+  }, 0)
+})
+
+const totalSkillPoints = computed(() => {
+  return currentSkillPoints.value + aspirationalSkillPoints.value
+})
+
+const maxPossiblePoints = computed(() => {
+  return (store.skills.length + store.aspirationalSkills.length) * 10
 })
 
 function getSkillsInCategory(category: string) {
