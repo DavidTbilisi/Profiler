@@ -67,7 +67,7 @@
 
     <!-- Current Skills Tab -->
     <div v-if="activeTab === 'current'">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-700">Current Skills & Competencies</h3>
         <button
           @click="startNewSkill"
@@ -75,6 +75,13 @@
         >
           + Add Skill
         </button>
+      </div>
+
+      <!-- Info Box -->
+      <div class="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p class="text-sm text-blue-800">
+          💡 <strong>Tip:</strong> Use the 🎯 button to convert current skills to learning goals, or ✏️ to edit, or 🗑️ to delete.
+        </p>
       </div>
     
     <!-- Search and Filter -->
@@ -224,6 +231,13 @@
                   ✏️
                 </button>
                 <button
+                  @click="convertToAspirational(skill)"
+                  class="text-purple-500 hover:text-purple-700 focus:outline-none"
+                  title="Convert to Learning Goal"
+                >
+                  🎯
+                </button>
+                <button
                   @click="deleteSkill(skill.id)"
                   class="text-red-500 hover:text-red-700 focus:outline-none"
                   title="Delete"
@@ -319,7 +333,7 @@
 
     <!-- Aspirational Skills Tab -->
     <div v-if="activeTab === 'aspirational'">
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-700">Skills You Want to Learn</h3>
         <button
           @click="startNewAspirationalSkill"
@@ -327,6 +341,13 @@
         >
           + Add Learning Goal
         </button>
+      </div>
+
+      <!-- Info Box -->
+      <div class="mb-6 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+        <p class="text-sm text-purple-800">
+          💡 <strong>Tip:</strong> Use the ✅ button to convert learning goals to current skills when you've achieved them, or ✏️ to edit, or 🗑️ to delete.
+        </p>
       </div>
 
       <!-- Aspirational Skill Editor -->
@@ -482,6 +503,13 @@
                     title="Edit"
                   >
                     ✏️
+                  </button>
+                  <button
+                    @click="convertToCurrent(skill)"
+                    class="text-green-500 hover:text-green-700 focus:outline-none"
+                    title="Convert to Current Skill"
+                  >
+                    ✅
                   </button>
                   <button
                     @click="deleteAspirationalSkill(skill.id)"
@@ -848,6 +876,56 @@ function getPriorityIcon(priority: string): string {
 function deleteSkill(id: string) {
   if (confirm('Are you sure you want to delete this skill?')) {
     store.removeSkill(id)
+  }
+}
+
+function convertToAspirational(skill: any) {
+  if (confirm(`Convert "${skill.name}" to a learning goal? This will remove it from your current skills and add it to your aspirational skills.`)) {
+    // Create aspirational skill based on current skill
+    const aspirationalSkill = {
+      name: skill.name,
+      category: skill.category,
+      priority: 'Medium' as const,
+      reason: `Continue developing from current level ${skill.proficiency}/10`,
+      targetProficiency: Math.min(skill.proficiency + 2, 10), // Target 2 levels higher, max 10
+      targetDate: '',
+      resources: skill.learningGoals || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    // Add to aspirational skills
+    store.addAspirationalSkill(
+      aspirationalSkill.name,
+      aspirationalSkill.category,
+      aspirationalSkill.priority,
+      aspirationalSkill.reason,
+      aspirationalSkill.targetProficiency,
+      aspirationalSkill.targetDate,
+      aspirationalSkill.resources
+    )
+    
+    // Remove from current skills
+    store.removeSkill(skill.id)
+  }
+}
+
+function convertToCurrent(skill: any) {
+  if (confirm(`Convert "${skill.name}" to a current skill? You'll need to set your proficiency level.`)) {
+    // Default proficiency based on target or a reasonable starting point
+    const defaultProficiency = Math.max(1, Math.min(skill.targetProficiency - 2, 5)) || 3
+    
+    // Create current skill based on aspirational skill
+    store.addSkill(
+      skill.name,
+      skill.category,
+      defaultProficiency,
+      skill.reason || `Converted from learning goal`,
+      skill.resources || ''
+    )
+    
+    // Remove from aspirational skills
+    store.removeAspirationalSkill(skill.id)
   }
 }
 
