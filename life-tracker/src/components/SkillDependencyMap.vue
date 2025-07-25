@@ -29,24 +29,6 @@
         <strong>🎯 Edit Mode Active:</strong> Click skills to edit dependencies • Drag skills to reposition them • Changes are saved automatically
       </p>
     </div>
-          @click="toggleEditMode"
-          :class="[
-            'px-4 py-2 rounded-md font-medium transition-colors',
-            isEditMode 
-              ? 'bg-orange-500 text-white hover:bg-orange-600' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          ]"
-        >
-          {{ isEditMode ? '✅ Done Editing' : '✏️ Edit Dependencies' }}
-        </button>
-        <button
-          @click="resetZoom"
-          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-        >
-          🔍 Reset Zoom
-        </button>
-      </div>
-    </div>
 
     <!-- Legend -->
     <div class="mb-4 p-3 bg-gray-50 rounded-lg">
