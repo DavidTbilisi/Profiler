@@ -53,7 +53,7 @@
               <button
                 v-for="demo in demoOptions"
                 :key="demo.count"
-                @click="handleLoadDemoData(demo.count)"
+                @click="loadDemoData(demo.count)"
                 class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
                 :title="demo.description"
               >
@@ -126,13 +126,13 @@
           </div>
 
           <!-- Action Buttons -->
-          <button @click="handleClearAllData" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
+          <button @click="clearAllData" class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors">
             Clear All
           </button>
-          <button @click="handleShowLearningPath" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+          <button @click="showLearningPath" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
             📈 Learning Path
           </button>
-          <button @click="handleHighlightCriticalPath" class="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors">
+          <button @click="highlightCriticalPath" class="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors">
             ⚡ Critical Path
           </button>
         </div>
@@ -149,7 +149,7 @@
               ]"
             >
               <span v-if="isEditMode">✅ Done Editing</span>
-              <span v-else>✏️ Edit</span>
+              <span v-else">✏️ Edit</span>
             </button>
 
             <button
@@ -207,15 +207,10 @@
             <strong>Category:</strong> {{ selectedSkill.category }}
           </p>
           <p class="text-sm text-gray-600 mb-1">
-            <strong>Proficiency:</strong> 
-            <span v-if="'proficiency' in selectedSkill">{{ selectedSkill.proficiency }}/10</span>
-            <span v-else>Aspirational ({{ selectedSkill.priority }} priority)</span>
+            <strong>Proficiency:</strong> {{ selectedSkill.proficiency }}/10
           </p>
-          <p v-if="'description' in selectedSkill && selectedSkill.description" class="text-sm text-gray-600">
+          <p v-if="selectedSkill.description" class="text-sm text-gray-600">
             <strong>Description:</strong> {{ selectedSkill.description }}
-          </p>
-          <p v-else-if="'reason' in selectedSkill && selectedSkill.reason" class="text-sm text-gray-600">
-            <strong>Reason:</strong> {{ selectedSkill.reason }}
           </p>
         </div>
         
@@ -230,10 +225,7 @@
                 class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded flex justify-between items-center"
               >
                 <span>{{ getCategoryIcon(prereq.category) }} {{ prereq.name }}</span>
-                <span class="text-orange-600 font-medium">
-                  <span v-if="'proficiency' in prereq">{{ prereq.proficiency }}/10</span>
-                  <span v-else>Aspirational</span>
-                </span>
+                <span class="text-orange-600 font-medium">{{ 'proficiency' in prereq ? prereq.proficiency + '/10' : 'Aspirational' }}</span>
               </div>
             </div>
             <p v-else class="text-xs text-gray-500 italic">No prerequisites required</p>
@@ -248,10 +240,7 @@
                 class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex justify-between items-center"
               >
                 <span>{{ getCategoryIcon(unlocked.category) }} {{ unlocked.name }}</span>
-                <span class="text-green-600 font-medium">
-                  <span v-if="'proficiency' in unlocked">{{ unlocked.proficiency }}/10</span>
-                  <span v-else>Aspirational</span>
-                </span>
+                <span class="text-green-600 font-medium">{{ 'proficiency' in unlocked ? unlocked.proficiency + '/10' : 'Aspirational' }}</span>
               </div>
             </div>
             <p v-else class="text-xs text-gray-500 italic">Doesn't unlock any skills</p>
@@ -279,7 +268,6 @@ import { useCytoscape } from '../composables/useCytoscape'
 import { useMinimap } from '../composables/useMinimap'
 import { useSkillsManagement } from '../composables/useSkillsManagement'
 import { useEditMode } from '../composables/useEditMode'
-import { useSkillPool } from '../composables/useSkillPool'
 
 // Register dagre plugin
 cytoscape.use(dagre)
@@ -324,6 +312,8 @@ const {
   getCategoryIcon,
   getPrerequisites,
   getUnlockedSkills,
+  clearAllData,
+  loadDemoData,
   handleNodeClick
 } = useSkillsManagement()
 
@@ -331,16 +321,6 @@ const {
   isEditMode,
   toggleEditMode
 } = useEditMode()
-
-const {
-  loadDemoData,
-  createNewSkill,
-  fetchFromLinkedIn,
-  fetchFromGitHub,
-  fetchFromJobMarket,
-  importFromFile,
-  clearAllSkills
-} = useSkillPool()
 
 // Demo options
 const showDemoOptions = ref(false)
@@ -408,36 +388,30 @@ const handleFilter = () => {
   }
 }
 
-// Wrapper functions for learning path and critical path
-const handleShowLearningPath = () => {
-  if (cy.value) {
-    showLearningPath(cy.value)
-  }
+// Skill pool methods
+const createNewSkill = () => {
+  console.log('Creating new skill...')
+  // Implementation would open a modal for creating new skills
 }
 
-const handleHighlightCriticalPath = () => {
-  if (cy.value) {
-    highlightCriticalPath(cy.value)
-  }
+const fetchFromLinkedIn = () => {
+  console.log('Fetching from LinkedIn...')
+  // Implementation would fetch skills from LinkedIn API
 }
 
-// Update clearAllData to use the proper skill pool function
-const handleClearAllData = async () => {
-  const cleared = await clearAllSkills()
-  if (cleared && cy.value) {
-    // Update the visualization after clearing
-    updateData([], [], [], [])
-  }
+const fetchFromGitHub = () => {
+  console.log('Fetching from GitHub...')
+  // Implementation would fetch trending technologies
 }
 
-// Handle demo data loading and update visualization
-const handleLoadDemoData = async (count: number) => {
-  const addedCount = await loadDemoData(count)
-  if (addedCount > 0 && cy.value) {
-    // Refresh the visualization with updated data from the store
-    const store = await import('@/stores/useProfileStore').then(m => m.useProfileStore())
-    updateData(store.skills, store.aspirationalSkills, store.skillDependencies, store.skills)
-  }
+const fetchFromJobMarket = () => {
+  console.log('Fetching from job market...')
+  // Implementation would fetch in-demand skills
+}
+
+const importFromFile = () => {
+  console.log('Importing from file...')
+  // Implementation would open file dialog
 }
 
 // Lifecycle
@@ -445,23 +419,8 @@ onMounted(async () => {
   await nextTick()
   
   if (cytoscapeContainer.value) {
-    // Get store data
-    const store = await import('@/stores/useProfileStore').then(m => m.useProfileStore())
-    
-    // Initialize with current store data if available, otherwise load demo data
-    if (store.skills.length === 0 && store.aspirationalSkills.length === 0) {
-      // Load starter demo data if no skills exist
-      await handleLoadDemoData(10)
-    }
-    
-    // Initialize Cytoscape with current store data
-    await initializeCytoscape(
-      cytoscapeContainer.value, 
-      store.skills, 
-      store.aspirationalSkills, 
-      store.skillDependencies, 
-      store.skills
-    )
+    // Initialize with empty data - the demo data will be loaded separately
+    await initializeCytoscape(cytoscapeContainer.value, [], [], [], [])
     
     // Set up node click handler
     if (cy.value) {
@@ -514,20 +473,5 @@ onUnmounted(() => {
 
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-/* Additional Cytoscape styling for paths and critical skills */
-:deep(.cy-container) {
-  /* Learning path nodes */
-  .path-node {
-    border: 5px solid #fbbf24 !important;
-    background-color: #fef3c7 !important;
-  }
-  
-  /* Critical path nodes */
-  .critical {
-    border: 4px solid #dc2626 !important;
-    background-color: #fee2e2 !important;
-  }
 }
 </style>

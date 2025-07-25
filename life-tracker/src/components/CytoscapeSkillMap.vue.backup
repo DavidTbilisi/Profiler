@@ -1,0 +1,1858 @@
+<template>
+  <div class="skill-dependency-map bg-white rounded-lg shadow-md p-6">
+    <!-- Header -->
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">🗺️ Enhanced Skill Dependency Map</h2>
+    <div class="flex flex-row flex-wrap items-center gap-2 mb-3 justify-between">
+      <div class="flex gap-2">
+        <button
+          @click="fitToView"
+          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
+          Fit to View
+        </button>
+        <button
+          @click="exportImage"
+          class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+        >
+          Export PNG
+        </button>
+      </div>
+      <div class="flex gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Layout:</label>
+          <select
+            v-model="selectedLayout"
+            @change="changeLayout"
+            class="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+          >
+            <option value="cose">⚡ Force Directed</option>
+            <option value="breadthfirst">📊 Hierarchical</option>
+            <option value="circle">⭕ Circular</option>
+            <option value="grid">⚏ Grid</option>
+            <option value="concentric">🎪 Concentric</option>
+            <option value="dagre">🌊 Dagre</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Theme:</label>
+          <select
+            v-model="selectedTheme"
+            @change="applyTheme"
+            class="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+          >
+            <option value="default">🎨 Default</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="neon">✨ Neon</option>
+            <option value="pastel">🌸 Pastel</option>
+            <option value="professional">💼 Professional</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Edit mode instructions -->
+    <div v-if="isEditMode" class="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+      <p class="text-sm text-orange-800">
+        <strong>🎯 Edit Mode Active:</strong> Right-click skills to add/remove dependencies • Drag to reposition • Double-click to edit skill details
+      </p>
+    </div>
+
+    <!-- Legend -->
+    <div class="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Legend:</h3>
+      <div class="flex flex-wrap gap-4 text-xs">
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-blue-700"></div>
+          <span>Learned Skills</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 bg-green-500 rounded-full border-2 border-green-700"></div>
+          <span>Available to Learn</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 bg-red-500 rounded-full border-2 border-red-700"></div>
+          <span>Blocked (missing prerequisites)</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 bg-gray-400 rounded-full border-2 border-gray-600"></div>
+          <span>Aspirational Skills</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter Controls -->
+    <div class="mb-4">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1">
+          <input
+            v-model="searchQuery"
+            @input="filterSkills"
+            type="text"
+            placeholder="🔍 Search skills..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <select
+            v-model="filterCategory"
+            @change="filterSkills"
+            class="px-3 py-2 border border-gray-300 rounded-md bg-white flex-1 sm:flex-none min-w-0"
+          >
+            <option value="">All Categories</option>
+            <option v-for="category in availableCategories" :key="category" :value="category">
+              {{ getCategoryIcon(category) }} {{ category }}
+            </option>
+          </select>
+          <select
+            v-model="filterStatus"
+            @change="filterSkills"
+            class="px-3 py-2 border border-gray-300 rounded-md bg-white flex-1 sm:flex-none min-w-0"
+          >
+            <option value="">All Skills</option>
+            <option value="learned">✅ Learned</option>
+            <option value="available">🟢 Available</option>
+            <option value="blocked">🔒 Blocked</option>
+            <option value="aspirational">⭐ Aspirational</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo Data Controls -->
+    <div class="mb-4">
+        <div class="flex">
+
+       
+            <div class="flex flex-wrap gap-2">
+                <div class="relative inline-block">
+                  <button
+                    @click.stop="toggleDemoOptions"
+                    class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                  >
+                    Load Demo Data
+                    <span class="text-xs">{{ showDemoOptions ? '▲' : '▼' }}</span>
+                  </button>
+                  
+                  <!-- Demo Data Options Dropdown -->
+                  <div
+                    v-if="showDemoOptions"
+                    class="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 min-w-48"
+                    @click.stop
+                  >
+                    <button
+                      @click="loadDemoData(10)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
+                      title="10 essential skills with 6 learning dependencies - perfect for beginners"
+                    >
+                      <div class="font-medium text-green-700">🟢 Starter (10 skills + deps)</div>
+                      <div class="text-xs text-gray-600">Essential skills with learning paths</div>
+                    </button>
+                    
+                    <button
+                      @click="loadDemoData(20)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
+                      title="20 skills with 16 dependencies - intermediate developer path"
+                    >
+                      <div class="font-medium text-yellow-600">🟡 Intermediate (20 skills + deps)</div>
+                      <div class="text-xs text-gray-600">Modern frameworks with prerequisites</div>
+                    </button>
+                    
+                    <button
+                      @click="loadDemoData(30)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
+                      title="30 skills with 26 dependencies - professional developer map"
+                    >
+                      <div class="font-medium text-orange-600">� Advanced (30 skills)</div>
+                      <div class="text-xs text-gray-600">Professional with backend expertise</div>
+                    </button>
+                    
+                    <button
+                      @click="loadDemoData(35)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
+                      title="35 skills for senior developers with emerging technologies"
+                    >
+                      <div class="font-medium text-red-600">🔴 Senior (35 skills)</div>
+                      <div class="text-xs text-gray-600">Senior with emerging technologies</div>
+                    </button>
+                    
+                    <button
+                      @click="loadDemoData(40)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 transition-colors"
+                      title="40 skills for expert-level with cutting-edge technologies"
+                    >
+                      <div class="font-medium text-purple-600">� Expert (40 skills)</div>
+                      <div class="text-xs text-gray-600">Expert with cutting-edge tech</div>
+                    </button>
+                    
+                    <button
+                      @click="loadDemoData(45)"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 transition-colors"
+                      title="45 skills for master-level with AI/ML and security expertise"
+                    >
+                      <div class="font-medium text-black">⚫ Master (45 skills)</div>
+                      <div class="text-xs text-gray-600">Master with AI/ML & security</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="relative inline-block">
+                  <button
+                    @click.stop="toggleSkillPoolOptions"
+                    class="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-1"
+                  >
+                    📚 Skill Pool
+                    <span class="text-xs">{{ showSkillPoolOptions ? '▲' : '▼' }}</span>
+                  </button>
+                  
+                  <!-- Skill Pool Options Dropdown -->
+                  <div
+                    v-if="showSkillPoolOptions"
+                    class="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-50 min-w-56"
+                    @click.stop
+                  >
+                    <button
+                      @click="createNewSkill"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 border-b border-gray-100 transition-colors"
+                      title="Create a new skill manually with custom details"
+                    >
+                      <div class="font-medium text-blue-700">➕ Create New Skill</div>
+                      <div class="text-xs text-gray-600">Add custom skill manually</div>
+                    </button>
+                    
+                    <button
+                      @click="fetchFromLinkedIn"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 border-b border-gray-100 transition-colors"
+                      title="Fetch popular skills from LinkedIn Skills database"
+                    >
+                      <div class="font-medium text-blue-700">💼 LinkedIn Skills</div>
+                      <div class="text-xs text-gray-600">Popular professional skills</div>
+                    </button>
+                    
+                    <button
+                      @click="fetchFromGitHub"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 border-b border-gray-100 transition-colors"
+                      title="Fetch trending technologies from GitHub"
+                    >
+                      <div class="font-medium text-green-700">🐙 GitHub Trending</div>
+                      <div class="text-xs text-gray-600">Trending tech & languages</div>
+                    </button>
+                    
+                    <button
+                      @click="fetchFromJobMarket"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 border-b border-gray-100 transition-colors"
+                      title="Fetch in-demand skills from job market data"
+                    >
+                      <div class="font-medium text-orange-700">📈 Job Market</div>
+                      <div class="text-xs text-gray-600">In-demand skills</div>
+                    </button>
+                    
+                    <button
+                      @click="importFromFile"
+                      class="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 transition-colors"
+                      title="Import skills from JSON or CSV file"
+                    >
+                      <div class="font-medium text-gray-700">📁 Import File</div>
+                      <div class="text-xs text-gray-600">JSON, CSV, or Excel</div>
+                    </button>
+                  </div>
+                </div>
+                <button
+                @click="clearAllData"
+                class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                Clear All
+                </button>
+                <button
+                @click="showLearningPath"
+                class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                title="Shows the optimal learning sequence from prerequisites to the selected skill. Select a skill first, then click to highlight the path you should follow to master that skill."
+                >
+                📈 Learning Path
+                </button>
+                <button
+                @click="highlightCriticalPath"
+                class="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
+                title="Highlights the most important skills that unlock the most other skills. These are bottleneck skills that should be prioritized as they open up many learning opportunities."
+                >
+                ⚡ Critical Path
+                </button>
+                <button
+                @click="testMinimap"
+                class="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                >
+                🔧 Test Minimap
+                </button>
+            
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-end gap-2">
+                    <button
+                        @click="toggleEditMode"
+                        :class="[
+                          'px-3 py-1 text-sm rounded transition-colors',
+                          isEditMode
+                            ? 'bg-orange-500 text-white hover:bg-orange-600'
+                            : 'bg-gray-600 text-white hover:bg-gray-700'
+                        ]"
+                    >
+                        <span v-if="isEditMode">✅ Done Editing</span>
+                        <span v-else>✏️ Edit</span>
+                    </button>
+
+                    <button
+                        @click="toggleMinimap"
+                        class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                    >
+                        {{ showMinimap ? 'Hide Minimap' : 'Show Minimap' }}
+                    </button>
+                </div>
+            </div>
+
+      </div>
+    </div>
+
+    <!-- Cytoscape Container with Minimap -->
+    <div class="relative border border-gray-200 rounded-lg bg-white overflow-hidden">
+      <div
+        ref="cytoscapeContainer"
+        class="w-full h-96 md:h-[700px] relative"
+        :style="containerStyle"
+      ></div>
+      
+      <!-- Minimap -->
+      <div
+        v-if="showMinimap"
+        class="absolute top-4 right-4 w-48 h-32 minimap-container z-50"
+        title="Click to navigate • Shows current viewport"
+        style="position: absolute; top: 1rem; right: 1rem;"
+      >
+        <div ref="minimapContainer" class="w-full h-full rounded-lg overflow-hidden relative">
+          <!-- Viewport indicator overlay -->
+          <div
+            ref="viewportIndicator"
+            class="absolute border-2 border-blue-500 border-dashed pointer-events-none opacity-80 z-10"
+            style="display: none; transition: all 0.1s ease-out; background-color: rgba(59, 130, 246, 0.1);"
+          ></div>
+        </div>
+      </div>
+      
+      <!-- Zoom Controls -->
+      <div class="absolute bottom-4 right-4 flex flex-col gap-2 z-40">
+        <button
+          @click="zoomIn"
+          class="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center text-gray-700 shadow-md"
+        >
+          ➕
+        </button>
+        <button
+          @click="zoomOut"
+          class="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center text-gray-700 shadow-md"
+        >
+          ➖
+        </button>
+        <button
+          @click="resetZoom"
+          class="w-10 h-10 bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center text-gray-700 shadow-md"
+        >
+          🎯
+        </button>
+      </div>
+      
+      <!-- Loading Animation -->
+      <div v-if="isLoading" class="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+        <div class="text-center">
+          <div class="animate-spin text-4xl mb-4">⚙️</div>
+          <p class="text-gray-600 font-medium">Optimizing layout...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected skill details -->
+    <div v-if="selectedSkill" class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <h3 class="text-lg font-semibold text-blue-800 mb-2">
+        {{ getCategoryIcon(selectedSkill.category) }} {{ selectedSkill.name }}
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h4 class="font-medium text-gray-700 mb-2">📋 Details</h4>
+          <p class="text-sm text-gray-600 mb-1">
+            <strong>Category:</strong> {{ selectedSkill.category }}
+          </p>
+          <p class="text-sm text-gray-600 mb-1">
+            <strong>Proficiency:</strong> {{ selectedSkill.proficiency }}/10
+          </p>
+          <p v-if="selectedSkill.description" class="text-sm text-gray-600">
+            <strong>Description:</strong> {{ selectedSkill.description }}
+          </p>
+        </div>
+        
+        <div>
+          <h4 class="font-medium text-gray-700 mb-2">🔗 Dependencies</h4>
+          <div class="mb-3">
+            <p class="text-sm font-medium text-gray-600 mb-1">Prerequisites:</p>
+            <div v-if="getPrerequisites(selectedSkill.id).length > 0" class="space-y-1">
+              <div
+                v-for="prereq in getPrerequisites(selectedSkill.id)"
+                :key="prereq.id"
+                class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded flex justify-between items-center"
+              >
+                <span>{{ getCategoryIcon(prereq.category) }} {{ prereq.name }}</span>
+                <span class="text-orange-600 font-medium">{{ 'proficiency' in prereq ? prereq.proficiency + '/10' : 'Aspirational' }}</span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500 italic">No prerequisites required</p>
+          </div>
+          
+          <div>
+            <p class="text-sm font-medium text-gray-600 mb-1">Unlocks:</p>
+            <div v-if="getUnlockedSkills(selectedSkill.id).length > 0" class="space-y-1">
+              <div
+                v-for="unlocked in getUnlockedSkills(selectedSkill.id)"
+                :key="unlocked.id"
+                class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex justify-between items-center"
+              >
+                <span>{{ getCategoryIcon(unlocked.category) }} {{ unlocked.name }}</span>
+                <span class="text-green-600 font-medium">{{ 'proficiency' in unlocked ? unlocked.proficiency + '/10' : 'Aspirational' }}</span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500 italic">Doesn't unlock any skills</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, nextTick, computed, type Ref } from 'vue'
+import { useProfileStore } from '@/stores/useProfileStore'
+import { getCategoryIcon } from '@/constants/skillCategories'
+import { useSkillPool } from '@/composables/useSkillPool'
+import type { Skill, AspirationalSkill } from '@/stores/useProfileStore'
+import cytoscape from 'cytoscape'
+// @ts-ignore - No types available for cytoscape-dagre
+import dagre from 'cytoscape-dagre'
+
+// Register the dagre layout extension
+cytoscape.use(dagre)
+
+const store = useProfileStore()
+const skillPool = useSkillPool()
+
+// Component state
+const isEditMode = ref(false)
+const selectedSkill = ref<Skill | null>(null)
+const selectedLayout = ref('cose')
+const selectedTheme = ref('default')
+const showMinimap = ref(true)
+const showDemoOptions = ref(false)
+const showSkillPoolOptions = ref(false)
+const isLoading = ref(false)
+const cytoscapeContainer = ref<HTMLElement>()
+const minimapContainer = ref<HTMLElement>()
+const viewportIndicator = ref<HTMLElement>()
+
+// Search and filter state
+const searchQuery = ref('')
+const filterCategory = ref('')
+const filterStatus = ref('')
+
+// Cytoscape instances
+let cy: any = null
+let minimapCy: any = null
+
+// Cytoscape configuration
+const cytoscapeConfig = {
+  container: null as HTMLElement | null,
+  
+  style: [
+    // Node styles
+    {
+      selector: 'node',
+      style: {
+        'width': '60px',
+        'height': '60px',
+        'background-color': 'data(color)',
+        'border-width': '3px',
+        'border-color': 'data(borderColor)',
+        'label': 'data(label)',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'color': '#ffffff',
+        'font-size': '10px',
+        'font-weight': 'bold',
+        'text-outline-width': '2px',
+        'text-outline-color': '#000000',
+        'text-outline-opacity': 0.3,
+        'overlay-padding': '6px',
+        'z-index': '10'
+      }
+    },
+    
+    // Selected node style
+    {
+      selector: 'node:selected',
+      style: {
+        'border-width': '4px',
+        'border-color': '#3b82f6',
+        'background-color': 'data(selectedColor)'
+      }
+    },
+    
+    // Hover effect
+    {
+      selector: 'node:active',
+      style: {
+        'overlay-opacity': '0.2',
+        'overlay-color': '#3b82f6'
+      }
+    },
+    
+    // Edge styles
+    {
+      selector: 'edge',
+      style: {
+        'width': '3px',
+        'line-color': '#6b7280',
+        'target-arrow-color': '#6b7280',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier',
+        'arrow-scale': 1.2
+      }
+    },
+    
+    // Selected edge style
+    {
+      selector: 'edge:selected',
+      style: {
+        'line-color': '#3b82f6',
+        'target-arrow-color': '#3b82f6',
+        'width': '4px'
+      }
+    },
+    
+    // Category-specific styles
+    {
+      selector: 'node[category = "Web Development"]',
+      style: {
+        'shape': 'round-rectangle'
+      }
+    },
+    {
+      selector: 'node[category = "Programming"]',
+      style: {
+        'shape': 'diamond'
+      }
+    },
+    {
+      selector: 'node[category = "Backend Development"]',
+      style: {
+        'shape': 'hexagon'
+      }
+    }
+  ],
+  
+  layout: {
+    name: 'cose',
+    directed: true,
+    roots: [],
+    padding: 30,
+    spacingFactor: 1.5,
+    avoidOverlap: true,
+    nodeDimensionsIncludeLabels: true
+  }
+}
+
+// Computed properties
+const availableCategories = computed<string[]>(() => {
+  const categories = new Set<string>()
+  store.skills.forEach(skill => categories.add(skill.category))
+  store.aspirationalSkills.forEach(skill => categories.add(skill.category))
+  return Array.from(categories).sort()
+})
+
+const containerStyle = computed<string>(() => {
+  const themes = {
+    default: 'background: linear-gradient(45deg, #f9fafb 25%, transparent 25%), linear-gradient(-45deg, #f9fafb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f9fafb 75%), linear-gradient(-45deg, transparent 75%, #f9fafb 75%); background-size: 20px 20px;',
+    dark: 'background: linear-gradient(45deg, #1f2937 25%, transparent 25%), linear-gradient(-45deg, #1f2937 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1f2937 75%), linear-gradient(-45deg, transparent 75%, #1f2937 75%); background-size: 20px 20px; background-color: #111827;',
+    neon: 'background: radial-gradient(circle at 25% 25%, #ff006e22 0%, transparent 50%), radial-gradient(circle at 75% 75%, #8338ec22 0%, transparent 50%); background-color: #0a0a0a;',
+    pastel: 'background: linear-gradient(45deg, #fef3c7 25%, transparent 25%), linear-gradient(-45deg, #ddd6fe 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #fed7d7 75%), linear-gradient(-45deg, transparent 75%, #d1fae5 75%); background-size: 30px 30px;',
+    professional: 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); opacity: 0.1;'
+  }
+  return themes[selectedTheme.value as keyof typeof themes] || themes.default
+})
+
+// Theme configurations
+const themes = {
+  default: {
+    nodeColors: { learned: '#3b82f6', available: '#10b981', blocked: '#ef4444', aspirational: '#6b7280' },
+    edgeColor: '#6b7280',
+    backgroundColor: '#ffffff'
+  },
+  dark: {
+    nodeColors: { learned: '#60a5fa', available: '#34d399', blocked: '#f87171', aspirational: '#9ca3af' },
+    edgeColor: '#9ca3af',
+    backgroundColor: '#111827'
+  },
+  neon: {
+    nodeColors: { learned: '#00ffff', available: '#00ff00', blocked: '#ff0080', aspirational: '#ffff00' },
+    edgeColor: '#ffffff',
+    backgroundColor: '#0a0a0a'
+  },
+  pastel: {
+    nodeColors: { learned: '#a78bfa', available: '#34d399', blocked: '#fbbf24', aspirational: '#f472b6' },
+    edgeColor: '#d1d5db',
+    backgroundColor: '#fefefe'
+  },
+  professional: {
+    nodeColors: { learned: '#1e40af', available: '#059669', blocked: '#dc2626', aspirational: '#4b5563' },
+    edgeColor: '#374151',
+    backgroundColor: '#f8fafc'
+  }
+}
+
+// Helper functions
+function getSkillColor(skill: Skill): string {
+  const currentTheme = themes[selectedTheme.value as keyof typeof themes]
+  const isLearned = skill.proficiency >= 5
+  const isAvailable = store.availableSkills.some(s => s.id === skill.id)
+  const isAspirational = !('proficiency' in skill)
+  
+  if (isAspirational) return currentTheme.nodeColors.aspirational
+  if (isLearned) return currentTheme.nodeColors.learned
+  if (isAvailable) return currentTheme.nodeColors.available
+  return currentTheme.nodeColors.blocked
+}
+
+function getSkillBorderColor(skill: Skill): string {
+  const isLearned = skill.proficiency >= 5
+  const currentTheme = themes[selectedTheme.value as keyof typeof themes]
+  
+  if (isLearned) {
+    // Darker version of the theme color
+    const colorMap: Record<string, string> = {
+      '#3b82f6': '#1d4ed8', '#60a5fa': '#2563eb', '#00ffff': '#00cccc',
+      '#a78bfa': '#7c3aed', '#1e40af': '#1e3a8a'
+    }
+    return colorMap[currentTheme.nodeColors.learned] || '#374151'
+  }
+  return '#374151'
+}
+
+function getSelectedColor(skill: Skill): string {
+  const baseColor = getSkillColor(skill)
+  // Lighter version for selection
+  const colorMap: Record<string, string> = {
+    '#3b82f6': '#60a5fa',
+    '#10b981': '#34d399',
+    '#ef4444': '#f87171'
+  }
+  return colorMap[baseColor] || baseColor
+}
+
+function getCytoscapeElements() {
+  const allSkills = [...store.skills, ...store.aspirationalSkills]
+  console.log(`🔍 getCytoscapeElements - Total skills: ${allSkills.length} (Regular: ${store.skills.length}, Aspirational: ${store.aspirationalSkills.length})`)
+  
+  // Create nodes
+  const nodes = allSkills.map(skill => ({
+    data: {
+      id: skill.id,
+      label: skill.name,
+      category: skill.category,
+      proficiency: 'proficiency' in skill ? skill.proficiency : 0,
+      color: getSkillColor(skill as Skill),
+      borderColor: getSkillBorderColor(skill as Skill),
+      selectedColor: getSelectedColor(skill as Skill),
+      isAspirational: !('proficiency' in skill)
+    }
+  }))
+  
+  console.log(`📦 Generated ${nodes.length} nodes`)
+  
+  // Create edges
+  const edges = store.skillDependencies.map(dep => ({
+    data: {
+      id: `${dep.fromSkillId}-${dep.toSkillId}`,
+      source: dep.fromSkillId,
+      target: dep.toSkillId,
+      description: dep.description || ''
+    }
+  }))
+  
+  console.log(`🔗 Generated ${edges.length} edges from ${store.skillDependencies.length} dependencies`)
+  
+  return [...nodes, ...edges]
+}
+
+// Component methods
+function initializeCytoscape() {
+  console.log('🚀 initializeCytoscape called')
+  console.log('📦 cytoscapeContainer.value:', cytoscapeContainer.value)
+  
+  if (!cytoscapeContainer.value) {
+    console.error('❌ cytoscapeContainer.value is not available!')
+    return
+  }
+
+  // Clean up existing instance if it exists
+  if (cy) {
+    try {
+      cy.destroy()
+    } catch (error) {
+      console.warn('⚠️ Error destroying existing Cytoscape instance:', error)
+    }
+    cy = null
+  }
+  
+  const elements = getCytoscapeElements()
+  console.log(`🎯 Initial elements for Cytoscape: ${elements.length}`)
+  
+  const config = {
+    ...cytoscapeConfig,
+    container: cytoscapeContainer.value,
+    elements
+  }
+  
+  console.log('🔧 Creating Cytoscape instance with config:', config)
+  
+  try {
+    // @ts-ignore - Bypassing Cytoscape TypeScript issues
+    cy = cytoscape(config)
+    
+    console.log('✅ Cytoscape instance created:', !!cy)
+    
+      // Event listeners with null checks
+    cy.on('tap', 'node', (event: any) => {
+      if (!cy) return
+      const node = event.target
+      const skillId = node.data('id')
+      const skill = [...store.skills, ...store.aspirationalSkills].find(s => s.id === skillId)
+      selectedSkill.value = skill as Skill || null
+    })
+    
+    cy.on('tap', (event: any) => {
+      if (!cy) return
+      if (event.target === cy) {
+        selectedSkill.value = null
+        cy?.elements().unselect()
+      }
+    })
+    
+    // Add global viewport synchronization listeners
+    cy.on('viewport', () => {
+      if (minimapCy && showMinimap.value) {
+        syncMinimapViewport()
+      }
+    })
+    
+    cy.on('pan', () => {
+      if (minimapCy && showMinimap.value) {
+        syncMinimapViewport()
+      }
+    })
+    
+    cy.on('zoom', () => {
+      if (minimapCy && showMinimap.value) {
+        // Reinitialize on zoom for better accuracy
+        setTimeout(() => {
+          setupViewportIndicator()
+          syncMinimapViewport()
+        }, 50)
+      }
+    })
+  } catch (error) {
+    console.error('❌ Error creating Cytoscape instance:', error)
+    cy = null
+    return
+  }
+
+  // Right-click context menu for edit mode
+  cy.on('cxttap', 'node', (event: any) => {
+    if (!isEditMode.value) return
+    
+    const node = event.target
+    const skillId = node.data('id')
+    showContextMenu(skillId, event.renderedPosition || event.position)
+  })
+  
+  // Enable dragging when in edit mode
+  cy.on('grab', 'node', () => {
+    if (!isEditMode.value) {
+      cy?.autoungrabify(true)
+    } else {
+      cy?.autoungrabify(false)
+    }
+  })
+  
+  // Initialize minimap after main graph is ready
+  cy.ready(() => {
+    console.log('🚀 Main cytoscape ready, checking minimap initialization...')
+    if (showMinimap.value && minimapContainer.value) {
+      console.log('✅ Both minimap is enabled and container exists, initializing...')
+      setTimeout(() => {
+        const success = initializeMinimap()
+        if (success) {
+          console.log('✅ Minimap initialized successfully on cy.ready')
+        } else {
+          console.warn('⚠️ Failed to initialize minimap on cy.ready')
+        }
+      }, 300)
+    } else {
+      console.log('⚠️ Minimap not ready:', { showMinimap: showMinimap.value, hasContainer: !!minimapContainer.value })
+    }
+  })
+}
+
+function updateCytoscapeData() {
+  console.log('🔄 Updating Cytoscape data...')
+  console.log(`📊 Store data - Skills: ${store.skills.length}, Aspirational: ${store.aspirationalSkills.length}, Dependencies: ${store.skillDependencies.length}`)
+  console.log('🔍 cy instance exists:', !!cy)
+  
+  if (!cy) {
+    console.warn('⚠️ Cytoscape instance not initialized, attempting to initialize...')
+    if (cytoscapeContainer.value) {
+      initializeCytoscape()
+      if (!cy) {
+        console.error('❌ Failed to initialize Cytoscape instance')
+        return
+      }
+    } else {
+      console.error('❌ Cannot initialize Cytoscape: container not available')
+      return
+    }
+  }
+  
+  isLoading.value = true
+  
+  setTimeout(() => {
+    // Double-check cy still exists after setTimeout
+    if (!cy) {
+      console.warn('⚠️ Cytoscape instance became null during update')
+      isLoading.value = false
+      return
+    }
+
+    const elements = getCytoscapeElements()
+    console.log(`🎯 Generated ${elements.length} Cytoscape elements`)
+    
+    try {
+      cy.elements().remove()
+      cy.add(elements)
+      
+      const layoutOptions = {
+        name: selectedLayout.value,
+        padding: 30,
+        spacingFactor: 1.5,
+        avoidOverlap: true,
+        nodeDimensionsIncludeLabels: true,
+        animate: true,
+        animationDuration: 800
+      }
+      
+      const layout = cy.layout(layoutOptions)
+      layout.run()
+      
+      layout.on('layoutstop', () => {
+        console.log('✅ Cytoscape layout completed')
+        isLoading.value = false
+        
+        // Always ensure minimap is properly initialized after layout
+        if (showMinimap.value && minimapContainer.value) {
+          console.log('🗺️ Ensuring minimap is initialized after layout...')
+          setTimeout(() => {
+            // Force minimap initialization if it doesn't exist
+            if (!minimapCy) {
+              console.log('🔧 Minimap not found, initializing...')
+              const success = initializeMinimap()
+              if (!success) {
+                console.warn('⚠️ Failed to initialize minimap')
+                return
+              }
+            }
+            
+            // Update existing minimap with new data
+            if (minimapCy && cy) {
+              console.log('🔄 Updating minimap with new data')
+              minimapCy.elements().remove()
+              minimapCy.add(cy.elements().jsons())
+              minimapCy.layout({ name: 'preset' }).run()
+              minimapCy.fit()
+              
+              // Setup viewport synchronization
+              setupViewportIndicator()
+              syncMinimapViewport()
+              
+              // Remove old event listeners and add new ones
+              cy.off('viewport pan zoom')
+              cy.on('viewport', () => syncMinimapViewport())
+              cy.on('pan', () => syncMinimapViewport())
+              cy.on('zoom', () => {
+                setTimeout(() => {
+                  setupViewportIndicator()
+                  syncMinimapViewport()
+                }, 50)
+              })
+              
+              console.log('✅ Minimap fully synchronized after layout')
+            }
+          }, 200)
+        }
+      })
+    } catch (error) {
+      console.error('❌ Error updating Cytoscape data:', error)
+      isLoading.value = false
+    }
+  }, 100)
+}
+
+function changeLayout() {
+  if (!cy) {
+    console.warn('⚠️ Cannot change layout: Cytoscape instance not available')
+    return
+  }
+  
+  try {
+    const layoutOptions = {
+      name: selectedLayout.value,
+      padding: 30,
+      spacingFactor: 1.5,
+      avoidOverlap: true,
+      nodeDimensionsIncludeLabels: true,
+      animate: true,
+      animationDuration: 1000
+    }
+    
+    cy.layout(layoutOptions).run()
+  } catch (error) {
+    console.error('❌ Error changing layout:', error)
+  }
+}
+
+function toggleEditMode() {
+  isEditMode.value = !isEditMode.value
+  
+  if (cy) {
+    try {
+      if (isEditMode.value) {
+        cy.autoungrabify(false) // Enable dragging
+      } else {
+        cy.autoungrabify(true) // Disable dragging
+      }
+    } catch (error) {
+      console.error('❌ Error toggling edit mode:', error)
+    }
+  } else {
+    console.warn('⚠️ Cannot toggle edit mode: Cytoscape instance not available')
+  }
+}
+
+function fitToView() {
+  if (cy) {
+    try {
+      cy.fit(undefined, 50) // 50px padding
+    } catch (error) {
+      console.error('❌ Error fitting to view:', error)
+    }
+  } else {
+    console.warn('⚠️ Cannot fit to view: Cytoscape instance not available')
+  }
+}
+
+function exportImage() {
+  if (cy) {
+    try {
+      const png = cy.png({
+        output: 'blob',
+        bg: 'white',
+        full: true,
+        scale: 2
+      })
+      
+      // Create download link
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(png)
+      link.download = 'skill-dependency-map.png'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('❌ Error exporting image:', error)
+    }
+  } else {
+    console.warn('⚠️ Cannot export image: Cytoscape instance not available')
+  }
+}
+
+function showContextMenu(skillId: string, position: { x: number; y: number }) {
+  // Simple context menu for now - could be enhanced with a proper menu component
+  const actions = ['Add Prerequisite', 'Add Dependent', 'Edit Skill', 'Remove Dependencies']
+  const choice = prompt(`Actions for skill:\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEnter choice (1-4):`)
+  
+  if (choice) {
+    const choiceNum = parseInt(choice)
+    switch (choiceNum) {
+      case 1:
+        addPrerequisitePrompt(skillId)
+        break
+      case 2:
+        addDependentPrompt(skillId)
+        break
+      case 3:
+        editSkillPrompt(skillId)
+        break
+      case 4:
+        removeDependenciesPrompt(skillId)
+        break
+    }
+  }
+}
+
+function addPrerequisitePrompt(skillId: string) {
+  const availableSkills = store.skills.filter(s => 
+    s.id !== skillId && 
+    !store.wouldCreateCircularDependency(s.id, skillId)
+  )
+  
+  if (availableSkills.length === 0) {
+    alert('No available skills to add as prerequisites')
+    return
+  }
+  
+  const skillList = availableSkills.map((s, i) => `${i + 1}. ${s.name}`).join('\n')
+  const choice = prompt(`Select prerequisite:\n${skillList}\n\nEnter number:`)
+  
+  if (choice) {
+    const index = parseInt(choice) - 1
+    if (index >= 0 && index < availableSkills.length) {
+      try {
+        store.addSkillDependency(availableSkills[index].id, skillId)
+        updateCytoscapeData()
+      } catch (error) {
+        alert('Error: ' + (error as Error).message)
+      }
+    }
+  }
+}
+
+function addDependentPrompt(skillId: string) {
+  const availableSkills = [...store.skills, ...store.aspirationalSkills].filter(s => 
+    s.id !== skillId && 
+    !store.wouldCreateCircularDependency(skillId, s.id)
+  )
+  
+  if (availableSkills.length === 0) {
+    alert('No available skills to add as dependents')
+    return
+  }
+  
+  const skillList = availableSkills.map((s, i) => `${i + 1}. ${s.name}`).join('\n')
+  const choice = prompt(`Select skill that depends on this:\n${skillList}\n\nEnter number:`)
+  
+  if (choice) {
+    const index = parseInt(choice) - 1
+    if (index >= 0 && index < availableSkills.length) {
+      try {
+        store.addSkillDependency(skillId, availableSkills[index].id)
+        updateCytoscapeData()
+      } catch (error) {
+        alert('Error: ' + (error as Error).message)
+      }
+    }
+  }
+}
+
+function editSkillPrompt(skillId: string) {
+  alert('Skill editing would open a detailed form - this is a placeholder')
+}
+
+function removeDependenciesPrompt(skillId: string) {
+  const dependencies = store.skillDependencies.filter(
+    dep => dep.fromSkillId === skillId || dep.toSkillId === skillId
+  )
+  
+  if (dependencies.length === 0) {
+    alert('No dependencies to remove')
+    return
+  }
+  
+  const depList = dependencies.map((dep, i) => {
+    const fromSkill = store.skills.find(s => s.id === dep.fromSkillId)?.name || dep.fromSkillId
+    const toSkill = [...store.skills, ...store.aspirationalSkills].find(s => s.id === dep.toSkillId)?.name || dep.toSkillId
+    return `${i + 1}. ${fromSkill} → ${toSkill}`
+  }).join('\n')
+  
+  const choice = prompt(`Select dependency to remove:\n${depList}\n\nEnter number:`)
+  
+  if (choice) {
+    const index = parseInt(choice) - 1
+    if (index >= 0 && index < dependencies.length) {
+      const dep = dependencies[index]
+      store.removeSkillDependency(dep.fromSkillId, dep.toSkillId)
+      updateCytoscapeData()
+    }
+  }
+}
+
+// DEBUG FUNCTION - Remove after testing
+async function debugLoadDemo() {
+  console.log('🐛 DEBUG: Starting demo data load test...')
+  
+  const { loadDemoData: loadDemo, demoDataSources } = useSkillPool()
+  
+  console.log('📋 Available demo sources:', demoDataSources.map(s => s.name))
+  
+  // Clear existing data
+  store.skills = []
+  store.aspirationalSkills = []
+  store.skillDependencies = []
+  store.saveToLocalStorage()
+  console.log('✅ Cleared existing data')
+  
+  // Load 10 skills demo
+  const addedCount = await loadDemo(10)
+  console.log(`🎯 Demo loading completed. Added count: ${addedCount}`)
+  
+  // Update the visualization
+  updateCytoscapeData()
+  
+  console.log('🐛 DEBUG: Demo data load test completed')
+}
+
+// Expose debug function to window for testing
+if (typeof window !== 'undefined') {
+  (window as any).debugLoadDemo = debugLoadDemo
+}
+
+async function loadDemoData(skillCount: 10 | 20 | 30 | 35 | 40 | 45) {
+  showDemoOptions.value = false // Close dropdown
+
+  const {
+    loadDemoData: loadDemo,
+    demoDataSources
+  } = useSkillPool()
+  
+  const demoInfo = demoDataSources.find(source => source.count === skillCount)
+  if (!demoInfo) {
+    alert('Demo data not found for the selected skill count')
+    return
+  }
+  
+  // For debugging, let's temporarily bypass the confirmation
+  const message = `This will load ${demoInfo.name}: ${demoInfo.description}. This will clear your current skills and replace them with demo data. Continue?`
+  
+  if (confirm(message)) {
+    console.log(`Loading demo data with ${skillCount} skills...`)
+    
+    // Clear existing data first (without additional confirmation)
+    console.log('🗑️ Clearing existing data...')
+    store.skills = []
+    store.aspirationalSkills = []
+    store.skillDependencies = []
+    store.saveToLocalStorage()
+    console.log('✅ Existing data cleared')
+    
+    // Load the demo data using skill pool
+    console.log('📦 Loading demo data from skill pool...')
+    const addedCount = await loadDemo(skillCount)
+    console.log(`📊 loadDemo returned: ${addedCount}`)
+    
+    if (addedCount > 0) {
+      console.log(`Successfully loaded ${addedCount} demo skills`)
+      console.log('🔄 Calling updateCytoscapeData...')
+      updateCytoscapeData()
+      
+      // Reinitialize minimap after data loads
+      if (showMinimap.value) {
+        setTimeout(() => {
+          console.log(`Reinitializing minimap after loading ${skillCount} skills`)
+          initializeMinimap()
+        }, 1000)
+      }
+    } else {
+      console.warn('No demo skills were loaded')
+    }
+  }
+}
+
+function toggleDemoOptions() {
+  console.log('Toggling demo options from', showDemoOptions.value, 'to', !showDemoOptions.value)
+  showDemoOptions.value = !showDemoOptions.value
+}
+
+function toggleSkillPoolOptions() {
+  console.log('Toggling skill pool options from', showSkillPoolOptions.value, 'to', !showSkillPoolOptions.value)
+  showSkillPoolOptions.value = !showSkillPoolOptions.value
+}
+
+// Skill Pool Functions
+async function createNewSkill() {
+  showSkillPoolOptions.value = false
+  const success = await skillPool.createNewSkill()
+  if (success) {
+    updateCytoscapeData()
+  }
+}
+
+async function fetchFromLinkedIn() {
+  showSkillPoolOptions.value = false
+  const addedCount = await skillPool.fetchFromLinkedIn()
+  if (addedCount > 0) {
+    updateCytoscapeData()
+  }
+}
+
+async function fetchFromGitHub() {
+  showSkillPoolOptions.value = false
+  const addedCount = await skillPool.fetchFromGitHub()
+  if (addedCount > 0) {
+    updateCytoscapeData()
+  }
+}
+
+async function fetchFromJobMarket() {
+  showSkillPoolOptions.value = false
+  const addedCount = await skillPool.fetchFromJobMarket()
+  if (addedCount > 0) {
+    updateCytoscapeData()
+  }
+}
+
+async function importFromFile() {
+  showSkillPoolOptions.value = false
+  const addedCount = await skillPool.importFromFile()
+  if (addedCount > 0) {
+    updateCytoscapeData()
+  }
+}
+
+function clearAllData() {
+  if (confirm('This will remove all skills and dependencies. This cannot be undone. Continue?')) {
+    store.skills = []
+    store.aspirationalSkills = []
+    store.skillDependencies = []
+    store.saveToLocalStorage()
+    updateCytoscapeData()
+    selectedSkill.value = null
+  }
+}
+
+function getPrerequisiteCount(skillId: string): number {
+  return store.skillDependencies.filter(dep => dep.toSkillId === skillId).length
+}
+
+function getUnlockedCount(skillId: string): number {
+  return store.skillDependencies.filter(dep => dep.fromSkillId === skillId).length
+}
+
+function getPrerequisites(skillId: string) {
+  return store.skillDependencies
+    .filter(dep => dep.toSkillId === skillId)
+    .map(dep => [...store.skills, ...store.aspirationalSkills].find(s => s.id === dep.fromSkillId))
+    .filter((skill): skill is Skill | AspirationalSkill => Boolean(skill))
+}
+
+function getUnlockedSkills(skillId: string) {
+  return store.skillDependencies
+    .filter(dep => dep.fromSkillId === skillId)
+    .map(dep => [...store.skills, ...store.aspirationalSkills].find(s => s.id === dep.toSkillId))
+    .filter((skill): skill is Skill | AspirationalSkill => Boolean(skill))
+}
+
+// Enhanced Functions
+function toggleMinimap() {
+  console.log('Toggling minimap from', showMinimap.value, 'to', !showMinimap.value)
+  showMinimap.value = !showMinimap.value
+  
+  if (showMinimap.value) {
+    console.log('Showing minimap - waiting for container to be ready...')
+    // Wait for the container to be rendered in the DOM
+    nextTick(() => {
+      setTimeout(() => {
+        console.log('Attempting to initialize minimap after container ready')
+        if (minimapContainer.value && cy) {
+          initializeMinimap()
+        } else {
+          console.log('Container or cy not ready yet, retrying in 500ms...')
+          setTimeout(() => {
+            if (minimapContainer.value && cy) {
+              initializeMinimap()
+            }
+          }, 500)
+        }
+      }, 100)
+    })
+  } else if (minimapCy) {
+    console.log('Hiding minimap - cleaning up instance')
+    // Clean up minimap when hiding
+    minimapCy.destroy()
+    minimapCy = null
+  }
+}
+
+function applyTheme() {
+  if (!cy) return
+  updateCytoscapeData()
+}
+
+function filterSkills() {
+  if (!cy) return
+  
+  const nodes = cy.nodes()
+  nodes.forEach((node: any) => {
+    const skill = [...store.skills, ...store.aspirationalSkills].find(s => s.id === node.data('id'))
+    if (!skill) return
+    
+    let visible = true
+    
+    // Search filter
+    if (searchQuery.value) {
+      visible = visible && skill.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    }
+    
+    // Category filter
+    if (filterCategory.value) {
+      visible = visible && skill.category === filterCategory.value
+    }
+    
+    // Status filter
+    if (filterStatus.value) {
+      const isLearned = 'proficiency' in skill && skill.proficiency >= 5
+      const isAvailable = store.availableSkills.some(s => s.id === skill.id)
+      const isAspirational = !('proficiency' in skill)
+      
+      switch (filterStatus.value) {
+        case 'learned':
+          visible = visible && isLearned
+          break
+        case 'available':
+          visible = visible && isAvailable && !isLearned
+          break
+        case 'blocked':
+          visible = visible && !isAvailable && !isAspirational
+          break
+        case 'aspirational':
+          visible = visible && isAspirational
+          break
+      }
+    }
+    
+    if (visible) {
+      node.show()
+    } else {
+      node.hide()
+    }
+  })
+  
+  // Hide edges connected to hidden nodes
+  cy.edges().forEach((edge: any) => {
+    const source = edge.source()
+    const target = edge.target()
+    if (source.visible() && target.visible()) {
+      edge.show()
+    } else {
+      edge.hide()
+    }
+  })
+}
+
+function showLearningPath() {
+  if (!selectedSkill.value || !cy) return
+  
+  const path = store.getSkillLearningPath(selectedSkill.value.id)
+  
+  // Reset all styles
+  cy.elements().removeClass('highlighted path-node path-edge')
+  
+  // Highlight path nodes
+  path.forEach((skill, index) => {
+    const node = cy.getElementById(skill.id)
+    node.addClass('path-node')
+    node.style('border-width', '5px')
+    node.style('border-color', '#fbbf24')
+  })
+  
+  // Highlight path edges
+  for (let i = 0; i < path.length - 1; i++) {
+    const edge = cy.edges(`[source="${path[i].id}"][target="${path[i + 1].id}"]`)
+    edge.addClass('path-edge')
+    edge.style('line-color', '#fbbf24')
+    edge.style('target-arrow-color', '#fbbf24')
+    edge.style('width', '5px')
+  }
+  
+  // Fit to path
+  const pathElements = cy.elements('.path-node, .path-edge')
+  cy.fit(pathElements, 100)
+}
+
+function highlightCriticalPath() {
+  if (!cy) return
+  
+  // Find skills with most dependencies (critical path)
+  const skillDependencyCounts = new Map<string, number>()
+  
+  store.skillDependencies.forEach(dep => {
+    skillDependencyCounts.set(dep.toSkillId, (skillDependencyCounts.get(dep.toSkillId) || 0) + 1)
+  })
+  
+  const criticalSkills = Array.from(skillDependencyCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([skillId]) => skillId)
+  
+  // Reset styles
+  cy.elements().removeClass('critical')
+  
+  // Highlight critical skills
+  criticalSkills.forEach(skillId => {
+    const node = cy.getElementById(skillId)
+    node.addClass('critical')
+    node.style('border-color', '#dc2626')
+    node.style('border-width', '4px')
+  })
+}
+
+function zoomIn() {
+  if (cy) {
+    cy.zoom(cy.zoom() * 1.2)
+  }
+}
+
+function zoomOut() {
+  if (cy) {
+    cy.zoom(cy.zoom() * 0.8)
+  }
+}
+
+function resetZoom() {
+  if (cy) {
+    cy.fit(undefined, 50)
+  }
+}
+
+function testMinimap() {
+  console.log('🧪 === MINIMAP TEST FUNCTION CALLED ===')
+  console.log('👁️ showMinimap.value:', showMinimap.value)
+  console.log('📦 minimapContainer.value:', !!minimapContainer.value)
+  console.log('🎯 cy exists:', !!cy)
+  console.log('🗺️ minimapCy exists:', !!minimapCy)
+  
+  if (!showMinimap.value) {
+    console.log('🔄 Minimap is hidden, showing it first...')
+    showMinimap.value = true
+    nextTick(() => {
+      setTimeout(() => testMinimap(), 500)
+    })
+    return
+  }
+  
+  if (!cy) {
+    console.warn('⚠️ Main Cytoscape instance not available, cannot test minimap')
+    return
+  }
+  
+  console.log('🚀 Forcing minimap initialization...')
+  const success = initializeMinimap()
+  
+  if (success) {
+    console.log('✅ Minimap test completed successfully')
+  } else {
+    console.error('❌ Minimap test failed')
+  }
+}
+
+function initializeMinimap() {
+  console.log('🗺️ === INITIALIZING MINIMAP ===')
+  console.log('📦 minimapContainer.value:', minimapContainer.value)
+  console.log('🎯 cy exists:', !!cy)
+  console.log('👁️ showMinimap.value:', showMinimap.value)
+  
+  if (!minimapContainer.value) {
+    console.error('❌ Cannot initialize minimap: container element not found')
+    return false
+  }
+  
+  if (!cy) {
+    console.error('❌ Cannot initialize minimap: main Cytoscape instance not available')
+    return false
+  }
+  
+  // Clean up existing minimap if it exists
+  if (minimapCy) {
+    console.log('🧹 Cleaning up existing minimap instance...')
+    try {
+      minimapCy.removeAllListeners()
+      minimapCy.destroy()
+    } catch (error) {
+      console.warn('⚠️ Error cleaning up existing minimap:', error)
+    }
+    minimapCy = null
+  }
+  
+  try {
+    console.log('🔧 Creating minimap configuration...')
+    const elements = cy.elements().jsons()
+    console.log('📊 Elements for minimap:', elements.length)
+    
+    if (elements.length === 0) {
+      console.warn('⚠️ No elements to display in minimap')
+      return false
+    }
+    
+    const minimapConfig = {
+      container: minimapContainer.value,
+      elements: elements,
+      style: cy.style(),
+      layout: { name: 'preset' },
+      userZoomingEnabled: false,  // Disable zooming to keep it as overview
+      userPanningEnabled: false,  // Disable panning, we'll handle clicks instead
+      boxSelectionEnabled: false,
+      autoungrabify: true,        // Prevent node dragging
+      minZoom: 0.1,
+      maxZoom: 1,
+      wheelSensitivity: 0         // Disable wheel zoom
+    }
+    
+    console.log('⚙️ Creating minimap Cytoscape instance...')
+    // @ts-ignore
+    minimapCy = cytoscape(minimapConfig)
+    console.log('✅ Minimap instance created successfully')
+    
+    // Always keep minimap fitted to show entire graph
+    minimapCy.fit()
+    console.log('🎯 Minimap fitted to show full graph')
+    
+    // Simple click-to-center functionality
+    minimapCy.on('tap', (event: any) => {
+      if (event.target === minimapCy && cy) {
+        try {
+          console.log('🖱️ Minimap clicked - centering main view')
+          const clickPos = event.position
+          
+          // Calculate scale difference between minimap and main view
+          const minimapBB = minimapCy.elements().boundingBox()
+          const mainBB = cy.elements().boundingBox()
+          
+          // Calculate relative position clicked (0-1 scale)
+          const relativeX = (clickPos.x - minimapBB.x1) / (minimapBB.x2 - minimapBB.x1)
+          const relativeY = (clickPos.y - minimapBB.y1) / (minimapBB.y2 - minimapBB.y1)
+          
+          // Convert to main view coordinates
+          const targetX = mainBB.x1 + relativeX * (mainBB.x2 - mainBB.x1)
+          const targetY = mainBB.y1 + relativeY * (mainBB.y2 - mainBB.y1)
+          
+          // Center main view on this position
+          cy.center({ x: targetX, y: targetY })
+          console.log('✅ Main view centered on clicked position')
+          
+        } catch (error) {
+          console.error('❌ Error centering main view:', error)
+        }
+      }
+    })
+    
+    // Add visual feedback on minimap hover
+    minimapCy.on('mouseover', () => {
+      if (minimapContainer.value) {
+        minimapContainer.value.style.cursor = 'pointer'
+      }
+    })
+    
+    minimapCy.on('mouseout', () => {
+      if (minimapContainer.value) {
+        minimapContainer.value.style.cursor = 'default'
+      }
+    })
+    
+    // Sync main view changes to minimap viewport indicator (temporarily disabled)
+    /*
+    cy.on('viewport', () => {
+      if (minimapCy) {
+        syncMinimapViewport()
+      }
+    })
+    
+    cy.on('pan zoom', () => {
+      if (minimapCy) {
+        syncMinimapViewport()
+      }
+    })
+    */
+    
+    // Initial sync with a small delay
+    setTimeout(() => {
+      if (minimapCy && cy) {
+        try {
+          // Keep minimap fitted to show full graph
+          minimapCy.fit()
+          console.log('🔄 Initial minimap sync complete')
+          
+          // Setup viewport synchronization with HTML overlay
+          setupViewportIndicator()
+          syncMinimapViewport()
+          
+          // Add event listeners for real-time viewport updates with reinitalization
+          cy.on('viewport', () => {
+            syncMinimapViewport()
+          })
+          
+          cy.on('pan', () => {
+            syncMinimapViewport()
+          })
+          
+          cy.on('zoom', () => {
+            // Reinitialize viewport indicator on zoom for better accuracy
+            setTimeout(() => {
+              setupViewportIndicator()
+              syncMinimapViewport()
+            }, 50)
+          })
+        } catch (error) {
+          console.error('❌ Error with initial sync:', error)
+        }
+      }
+    }, 100)
+    
+    console.log('🎉 Minimap initialization completed successfully')
+    return true
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize minimap:', error)
+    return false
+  }
+}
+
+function setupViewportIndicator() {
+  if (!minimapCy || !viewportIndicator.value) return
+  
+  console.log('🎯 Setting up HTML viewport indicator...')
+  
+  try {
+    // Show the viewport indicator
+    viewportIndicator.value.style.display = 'block'
+    console.log('✅ HTML viewport indicator enabled')
+  } catch (error) {
+    console.warn('⚠️ Error setting up HTML viewport indicator:', error)
+  }
+}
+
+function syncMinimapViewport() {
+  if (!cy || !minimapCy || !viewportIndicator.value || !minimapContainer.value) return
+  
+  try {
+    // Get the minimap container dimensions
+    const minimapWidth = minimapContainer.value.clientWidth
+    const minimapHeight = minimapContainer.value.clientHeight
+    
+    console.log(`📏 Minimap dimensions: ${minimapWidth}x${minimapHeight}`)
+    
+    // Get the main cytoscape container dimensions
+    const mainContainer = cy.container()
+    const mainWidth = mainContainer.clientWidth
+    const mainHeight = mainContainer.clientHeight
+    
+    console.log(`📏 Main container dimensions: ${mainWidth}x${mainHeight}`)
+    
+    // Get current viewport info using the correct Cytoscape API
+    const mainPan = cy.pan()
+    const mainZoom = cy.zoom()
+    
+    console.log(`🔍 Viewport info - Pan: ${mainPan.x}, ${mainPan.y}, Zoom: ${mainZoom}`)
+    
+    // Validate zoom value
+    if (!mainZoom || mainZoom <= 0 || isNaN(mainZoom)) {
+      console.warn('⚠️ Invalid zoom value:', mainZoom)
+      return
+    }
+    
+    // Validate pan values
+    if (!mainPan || isNaN(mainPan.x) || isNaN(mainPan.y)) {
+      console.warn('⚠️ Invalid pan values:', mainPan)
+      return
+    }
+    
+    // Get the extent of all elements in both graphs
+    const mainExtent = cy.elements().boundingBox()
+    const minimapExtent = minimapCy.elements().boundingBox()
+    
+    console.log(`📦 Main extent:`, mainExtent)
+    console.log(`📦 Minimap extent:`, minimapExtent)
+    
+    if (!mainExtent || !minimapExtent || mainExtent.w === 0 || mainExtent.h === 0) {
+      console.warn('⚠️ Invalid extents, skipping sync')
+      return
+    }
+    
+    // Calculate what area of the main graph is currently visible
+    const visibleMainWidth = mainWidth / mainZoom
+    const visibleMainHeight = mainHeight / mainZoom
+    
+    console.log(`👁️ Visible area: ${visibleMainWidth}x${visibleMainHeight}`)
+    
+    // Calculate the viewport center in world coordinates
+    const viewportCenterX = -mainPan.x / mainZoom + mainWidth / (2 * mainZoom)
+    const viewportCenterY = -mainPan.y / mainZoom + mainHeight / (2 * mainZoom)
+    
+    console.log(`🎯 Viewport center: ${viewportCenterX}, ${viewportCenterY}`)
+    
+    // Use minimap extent for proper coordinate conversion
+    const minimapScaleX = minimapWidth / minimapExtent.w
+    const minimapScaleY = minimapHeight / minimapExtent.h
+    
+    // Convert viewport center to minimap coordinates
+    const minimapCenterX = (viewportCenterX - minimapExtent.x1) * minimapScaleX
+    const minimapCenterY = (viewportCenterY - minimapExtent.y1) * minimapScaleY
+    
+    console.log(`🗺️ Minimap center: ${minimapCenterX}, ${minimapCenterY}`)
+    
+    // Calculate indicator size relative to minimap
+    const indicatorWidth = Math.min(minimapWidth, Math.max(8, visibleMainWidth * minimapScaleX))
+    const indicatorHeight = Math.min(minimapHeight, Math.max(8, visibleMainHeight * minimapScaleY))
+    
+    console.log(`📐 Indicator size: ${indicatorWidth}x${indicatorHeight}`)
+    
+    // Position the viewport indicator (center it on the calculated position)
+    const left = Math.max(0, Math.min(minimapWidth - indicatorWidth, minimapCenterX - indicatorWidth / 2))
+    const top = Math.max(0, Math.min(minimapHeight - indicatorHeight, minimapCenterY - indicatorHeight / 2))
+    
+    // Only update if we have valid numbers
+    if (!isNaN(left) && !isNaN(top) && !isNaN(indicatorWidth) && !isNaN(indicatorHeight)) {
+      // Update the viewport indicator
+      viewportIndicator.value.style.left = `${left}px`
+      viewportIndicator.value.style.top = `${top}px`
+      viewportIndicator.value.style.width = `${indicatorWidth}px`
+      viewportIndicator.value.style.height = `${indicatorHeight}px`
+      viewportIndicator.value.style.display = 'block'
+      viewportIndicator.value.style.visibility = 'visible'
+      
+      // Force a repaint to ensure visibility
+      viewportIndicator.value.offsetHeight
+      
+      console.log(`✅ Viewport synced: ${left.toFixed(0)},${top.toFixed(0)} ${indicatorWidth.toFixed(0)}x${indicatorHeight.toFixed(0)}`)
+    } else {
+      console.warn(`⚠️ Invalid viewport values: left=${left}, top=${top}, width=${indicatorWidth}, height=${indicatorHeight}`)
+      // Hide indicator if values are invalid
+      viewportIndicator.value.style.display = 'none'
+    }
+    
+  } catch (error) {
+    console.warn('⚠️ Error syncing HTML viewport indicator:', error)
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  console.log('🚀 Component mounted, initializing...')
+  nextTick(() => {
+    console.log('🎯 NextTick - DOM ready, initializing Cytoscape...')
+    initializeCytoscape()
+    
+    // Initialize minimap with better timing
+    if (showMinimap.value) {
+      console.log('🗺️ Minimap enabled, setting up initialization sequence...')
+      
+      // Try multiple times with increasing delays to ensure containers are ready
+      const tryInitMinimap = (attempt = 1, maxAttempts = 5) => {
+        console.log(`🔄 Minimap initialization attempt ${attempt}/${maxAttempts}`)
+        console.log('📦 minimapContainer.value:', !!minimapContainer.value)
+        console.log('🎯 cy exists:', !!cy)
+        
+        if (minimapContainer.value && cy) {
+          console.log('✅ Both containers ready, initializing minimap...')
+          initializeMinimap()
+        } else if (attempt < maxAttempts) {
+          console.log(`⏳ Containers not ready, retrying in ${attempt * 500}ms...`)
+          setTimeout(() => tryInitMinimap(attempt + 1, maxAttempts), attempt * 500)
+        } else {
+          console.warn('❌ Failed to initialize minimap after 5 attempts')
+        }
+      }
+      
+      // Start the initialization sequence
+      tryInitMinimap()
+    }
+  })
+  
+  // Close dropdown options when clicking outside
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement
+    if (showDemoOptions.value && !target.closest('.relative.inline-block')) {
+      console.log('Clicking outside demo dropdown, closing it')
+      showDemoOptions.value = false
+    }
+    if (showSkillPoolOptions.value && !target.closest('.relative.inline-block')) {
+      console.log('Clicking outside skill pool dropdown, closing it')
+      showSkillPoolOptions.value = false
+    }
+  })
+})
+
+onUnmounted(() => {
+  console.log('🧹 Component unmounting, cleaning up Cytoscape instances...')
+  
+  // Clean up main Cytoscape instance
+  if (cy) {
+    try {
+      cy.removeAllListeners()
+      cy.destroy()
+      console.log('✅ Main Cytoscape instance destroyed')
+    } catch (error) {
+      console.warn('⚠️ Error destroying main Cytoscape instance:', error)
+    } finally {
+      cy = null
+    }
+  }
+  
+  // Clean up minimap Cytoscape instance
+  if (minimapCy) {
+    try {
+      minimapCy.removeAllListeners()
+      minimapCy.destroy()
+      console.log('✅ Minimap Cytoscape instance destroyed')
+    } catch (error) {
+      console.warn('⚠️ Error destroying minimap Cytoscape instance:', error)
+    } finally {
+      minimapCy = null
+    }
+  }
+})
+
+// Watch for data changes
+// We could add watchers here to auto-update the graph when store data changes
+</script>
+
+<style scoped>
+.skill-dependency-map {
+  user-select: none;
+}
+
+/* Cytoscape container ensures proper sizing */
+.cytoscape-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Minimap specific styles */
+.minimap-container {
+  position: relative;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.minimap-container:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+/* Viewport indicator animation */
+.minimap-container .viewport-indicator {
+  transition: all 0.1s ease-out;
+}
+</style>
