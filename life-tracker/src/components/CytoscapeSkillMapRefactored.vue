@@ -206,11 +206,17 @@
           <p class="text-sm text-gray-600 mb-1">
             <strong>Category:</strong> {{ selectedSkill.category }}
           </p>
-          <p class="text-sm text-gray-600 mb-1">
+          <p v-if="'proficiency' in selectedSkill" class="text-sm text-gray-600 mb-1">
             <strong>Proficiency:</strong> {{ selectedSkill.proficiency }}/10
           </p>
-          <p v-if="selectedSkill.description" class="text-sm text-gray-600">
+          <p v-if="'priority' in selectedSkill" class="text-sm text-gray-600 mb-1">
+            <strong>Priority:</strong> {{ selectedSkill.priority }}
+          </p>
+          <p v-if="'description' in selectedSkill && selectedSkill.description" class="text-sm text-gray-600">
             <strong>Description:</strong> {{ selectedSkill.description }}
+          </p>
+          <p v-if="'reason' in selectedSkill && selectedSkill.reason" class="text-sm text-gray-600">
+            <strong>Reason:</strong> {{ selectedSkill.reason }}
           </p>
         </div>
         
