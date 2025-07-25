@@ -18,6 +18,31 @@
           @click="resetZoom"
           class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
         >
+          Reset View
+        </button>
+      </div>
+    </div>
+
+    <!-- Edit mode instructions -->
+    <div v-if="isEditMode" class="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+      <p class="text-sm text-orange-800">
+        <strong>🎯 Edit Mode Active:</strong> Click skills to edit dependencies • Drag skills to reposition them • Changes are saved automatically
+      </p>
+    </div>
+          @click="toggleEditMode"
+          :class="[
+            'px-4 py-2 rounded-md font-medium transition-colors',
+            isEditMode 
+              ? 'bg-orange-500 text-white hover:bg-orange-600' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          ]"
+        >
+          {{ isEditMode ? '✅ Done Editing' : '✏️ Edit Dependencies' }}
+        </button>
+        <button
+          @click="resetZoom"
+          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+        >
           🔍 Reset Zoom
         </button>
       </div>
@@ -59,6 +84,12 @@
         >
           Check Storage
         </button>
+        <button
+          @click="recalculateLayout"
+          class="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+        >
+          Reset Layout
+        </button>
       </div>
     </div>
 
@@ -69,9 +100,10 @@
         :width="svgWidth"
         :height="svgHeight"
         class="cursor-move"
-        @mousedown="startPan"
-        @mousemove="pan"
-        @mouseup="endPan"
+        @mousedown="handleMouseDown"
+        @mousemove="handleMouseMove"
+        @mouseup="handleMouseUp"
+        @mouseleave="handleMouseUp"
         @wheel="zoom"
       >
         <!-- Transform group for zoom/pan -->
@@ -100,6 +132,7 @@
               :transform="`translate(${skill.x}, ${skill.y})`"
               class="skill-node cursor-pointer"
               @click="selectSkill(skill)"
+              @mousedown="startDrag(skill.id, $event)"
             >
               <!-- Node circle -->
               <circle
@@ -351,6 +384,11 @@ const zoomLevel = ref(1)
 const isPanning = ref(false)
 const lastPanPoint = ref({ x: 0, y: 0 })
 
+// Drag functionality
+const isDragging = ref(false)
+const draggedSkill = ref<string | null>(null)
+const dragOffset = ref({ x: 0, y: 0 })
+
 // Dependency editing
 const newPrerequisite = ref('')
 const newUnlockedSkill = ref('')
@@ -501,6 +539,12 @@ ${deps.length > 0 ? '✅ Dependencies are being saved!' : '⚠️ No dependencie
   }
 }
 
+function recalculateLayout() {
+  // Clear saved positions to force recalculation
+  localStorage.removeItem('skill-positions')
+  calculateLayout()
+}
+
 // Layout calculation
 function calculateLayout() {
   isCalculatingLayout.value = true
@@ -509,7 +553,7 @@ function calculateLayout() {
     const skills = store.skills
     const dependencies = store.skillDependencies
     
-    // Simple force-directed layout algorithm
+    // Initialize nodes with random positions
     const nodes = skills.map(skill => ({
       ...skill,
       x: Math.random() * (svgWidth.value - 100) + 50,
@@ -518,9 +562,23 @@ function calculateLayout() {
       vy: 0
     }))
     
+    // Try to load saved positions first
+    positionedSkills.value = nodes
+    const hasLoadedPositions = loadSkillPositions()
+    
+    if (!hasLoadedPositions) {
+      // Only run force-directed layout if no saved positions exist
+      runForceDirectedLayout(nodes, dependencies)
+    }
+    
+    isCalculatingLayout.value = false
+  })
+}
+
+function runForceDirectedLayout(nodes: any[], dependencies: any[]) {
     // Simulation parameters
     const iterations = 100
-    const k = Math.sqrt((svgWidth.value * svgHeight.value) / skills.length)
+    const k = Math.sqrt((svgWidth.value * svgHeight.value) / nodes.length)
     
     for (let i = 0; i < iterations; i++) {
       // Reset forces
@@ -574,8 +632,6 @@ function calculateLayout() {
     }
     
     positionedSkills.value = nodes
-    isCalculatingLayout.value = false
-  })
 }
 
 // Pan and zoom functionality
@@ -598,6 +654,106 @@ function pan(event: MouseEvent) {
 
 function endPan() {
   isPanning.value = false
+}
+
+// Drag functionality for skills
+function startDrag(skillId: string, event: MouseEvent) {
+  event.stopPropagation() // Prevent triggering pan
+  isDragging.value = true
+  draggedSkill.value = skillId
+  
+  const skill = positionedSkills.value.find(s => s.id === skillId)
+  if (skill) {
+    // Calculate offset from skill center to mouse position
+    const rect = svgContainer.value?.getBoundingClientRect()
+    if (rect) {
+      const mouseX = (event.clientX - rect.left - panX.value) / zoomLevel.value
+      const mouseY = (event.clientY - rect.top - panY.value) / zoomLevel.value
+      
+      dragOffset.value = {
+        x: mouseX - skill.x - nodeRadius,
+        y: mouseY - skill.y - nodeRadius
+      }
+    }
+  }
+}
+
+// Unified mouse event handlers
+function handleMouseDown(event: MouseEvent) {
+  const target = event.target as Element
+  
+  // Check if we're clicking on a skill node
+  const skillNode = target.closest('.skill-node')
+  if (skillNode && isEditMode.value) {
+    // Drag handling is done by startDrag function
+    return
+  }
+  
+  // Otherwise, start panning
+  startPan(event)
+}
+
+function handleMouseMove(event: MouseEvent) {
+  if (isDragging.value && draggedSkill.value) {
+    // Handle skill dragging
+    const rect = svgContainer.value?.getBoundingClientRect()
+    if (rect) {
+      const mouseX = (event.clientX - rect.left - panX.value) / zoomLevel.value
+      const mouseY = (event.clientY - rect.top - panY.value) / zoomLevel.value
+      
+      const skill = positionedSkills.value.find(s => s.id === draggedSkill.value)
+      if (skill) {
+        skill.x = Math.max(nodeRadius, Math.min(svgWidth.value - nodeRadius, mouseX - dragOffset.value.x - nodeRadius))
+        skill.y = Math.max(nodeRadius, Math.min(svgHeight.value - nodeRadius, mouseY - dragOffset.value.y - nodeRadius))
+      }
+    }
+  } else if (isPanning.value) {
+    // Handle panning
+    pan(event)
+  }
+}
+
+function handleMouseUp() {
+  if (isDragging.value) {
+    isDragging.value = false
+    draggedSkill.value = null
+    // Save positions to localStorage
+    saveSkillPositions()
+  }
+  endPan()
+}
+
+// Save skill positions to localStorage
+function saveSkillPositions() {
+  try {
+    const positions: Record<string, { x: number; y: number }> = {}
+    positionedSkills.value.forEach(skill => {
+      positions[skill.id] = { x: skill.x, y: skill.y }
+    })
+    localStorage.setItem('skill-positions', JSON.stringify(positions))
+  } catch (error) {
+    console.error('Failed to save skill positions:', error)
+  }
+}
+
+// Load skill positions from localStorage
+function loadSkillPositions() {
+  try {
+    const saved = localStorage.getItem('skill-positions')
+    if (saved) {
+      const positions = JSON.parse(saved)
+      positionedSkills.value.forEach(skill => {
+        if (positions[skill.id]) {
+          skill.x = positions[skill.id].x
+          skill.y = positions[skill.id].y
+        }
+      })
+      return true
+    }
+  } catch (error) {
+    console.error('Failed to load skill positions:', error)
+  }
+  return false
 }
 
 function zoom(event: WheelEvent) {
