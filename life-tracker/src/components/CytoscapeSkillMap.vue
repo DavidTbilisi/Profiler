@@ -19,8 +19,8 @@
           @change="changeLayout"
           class="px-3 py-2 border border-gray-300 rounded-md bg-white"
         >
-          <option value="breadthfirst">📊 Hierarchical</option>
           <option value="cose">⚡ Force Directed</option>
+          <option value="breadthfirst">📊 Hierarchical</option>
           <option value="circle">⭕ Circular</option>
           <option value="grid">⚏ Grid</option>
           <option value="concentric">🎪 Concentric</option>
@@ -117,9 +117,34 @@
         
         <div>
           <h4 class="font-medium text-gray-700 mb-2">🔗 Dependencies</h4>
-          <div class="text-sm text-gray-600">
-            <p><strong>Prerequisites:</strong> {{ getPrerequisiteCount(selectedSkill.id) }}</p>
-            <p><strong>Unlocks:</strong> {{ getUnlockedCount(selectedSkill.id) }}</p>
+          <div class="mb-3">
+            <p class="text-sm font-medium text-gray-600 mb-1">Prerequisites:</p>
+            <div v-if="getPrerequisites(selectedSkill.id).length > 0" class="space-y-1">
+              <div
+                v-for="prereq in getPrerequisites(selectedSkill.id)"
+                :key="prereq.id"
+                class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded flex justify-between items-center"
+              >
+                <span>{{ getCategoryIcon(prereq.category) }} {{ prereq.name }}</span>
+                <span class="text-orange-600 font-medium">{{ 'proficiency' in prereq ? prereq.proficiency + '/10' : 'Aspirational' }}</span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500 italic">No prerequisites required</p>
+          </div>
+          
+          <div>
+            <p class="text-sm font-medium text-gray-600 mb-1">Unlocks:</p>
+            <div v-if="getUnlockedSkills(selectedSkill.id).length > 0" class="space-y-1">
+              <div
+                v-for="unlocked in getUnlockedSkills(selectedSkill.id)"
+                :key="unlocked.id"
+                class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex justify-between items-center"
+              >
+                <span>{{ getCategoryIcon(unlocked.category) }} {{ unlocked.name }}</span>
+                <span class="text-green-600 font-medium">{{ 'proficiency' in unlocked ? unlocked.proficiency + '/10' : 'Aspirational' }}</span>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500 italic">Doesn't unlock any skills</p>
           </div>
         </div>
       </div>
@@ -131,7 +156,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useProfileStore } from '@/stores/useProfileStore'
 import { getCategoryIcon } from '@/constants/skillCategories'
-import type { Skill } from '@/stores/useProfileStore'
+import type { Skill, AspirationalSkill } from '@/stores/useProfileStore'
 import cytoscape from 'cytoscape'
 
 const store = useProfileStore()
@@ -139,7 +164,7 @@ const store = useProfileStore()
 // Component state
 const isEditMode = ref(false)
 const selectedSkill = ref<Skill | null>(null)
-const selectedLayout = ref('breadthfirst')
+const selectedLayout = ref('cose')
 const cytoscapeContainer = ref<HTMLElement>()
 
 // Cytoscape instance
@@ -237,7 +262,7 @@ const cytoscapeConfig = {
   ],
   
   layout: {
-    name: 'breadthfirst',
+    name: 'cose',
     directed: true,
     roots: [],
     padding: 30,
@@ -556,6 +581,20 @@ function getPrerequisiteCount(skillId: string): number {
 
 function getUnlockedCount(skillId: string): number {
   return store.skillDependencies.filter(dep => dep.fromSkillId === skillId).length
+}
+
+function getPrerequisites(skillId: string) {
+  return store.skillDependencies
+    .filter(dep => dep.toSkillId === skillId)
+    .map(dep => [...store.skills, ...store.aspirationalSkills].find(s => s.id === dep.fromSkillId))
+    .filter((skill): skill is Skill | AspirationalSkill => Boolean(skill))
+}
+
+function getUnlockedSkills(skillId: string) {
+  return store.skillDependencies
+    .filter(dep => dep.fromSkillId === skillId)
+    .map(dep => [...store.skills, ...store.aspirationalSkills].find(s => s.id === dep.toSkillId))
+    .filter((skill): skill is Skill | AspirationalSkill => Boolean(skill))
 }
 
 // Lifecycle
