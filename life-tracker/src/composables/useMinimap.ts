@@ -1,4 +1,4 @@
-import { ref, type Ref } from 'vue'
+import { ref } from 'vue'
 import cytoscape from 'cytoscape'
 
 export function useMinimap() {
@@ -57,7 +57,6 @@ export function useMinimap() {
       }
       
       console.log('⚙️ Creating minimap Cytoscape instance...')
-      // @ts-ignore
       minimapCy.value = cytoscape(minimapConfig)
       console.log('✅ Minimap instance created successfully')
       
@@ -204,6 +203,7 @@ export function useMinimap() {
         viewportIndicator.value.style.visibility = 'visible'
         
         // Force repaint
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         viewportIndicator.value.offsetHeight
         
         return true

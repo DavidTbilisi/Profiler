@@ -263,9 +263,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import cytoscape, { type Core, type EventObject } from 'cytoscape'
-// @ts-ignore - cytoscape-dagre has no types
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import cytoscape, { type EventObject } from 'cytoscape'
+// @ts-expect-error - cytoscape-dagre has no types
 import dagre from 'cytoscape-dagre'
 
 // Import our new modular components and composables
@@ -297,8 +297,6 @@ const {
   containerStyle,
   initializeCytoscape,
   updateData,
-  changeLayout,
-  applyTheme,
   fitToView,
   exportImage,
   zoomIn,
@@ -312,7 +310,6 @@ const {
 } = useMinimap()
 
 const {
-  skills,
   selectedSkill,
   searchQuery,
   filterCategory,

@@ -1,6 +1,6 @@
-import { ref, computed, watch, type Ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import cytoscape from 'cytoscape'
-// @ts-ignore - No types available for cytoscape-dagre
+// @ts-expect-error - No types available for cytoscape-dagre
 import dagre from 'cytoscape-dagre'
 import type { Skill, AspirationalSkill } from '@/stores/useProfileStore'
 
@@ -280,7 +280,7 @@ export function useCytoscape() {
     }
     
     try {
-      // @ts-ignore - Bypassing Cytoscape TypeScript issues
+      // @ts-expect-error - Bypassing Cytoscape TypeScript issues
       cy.value = cytoscape(config)
       console.log('✅ Cytoscape instance created successfully')
       return true
