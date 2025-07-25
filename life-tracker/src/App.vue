@@ -61,6 +61,13 @@
               Skills
             </RouterLink>
             <RouterLink 
+              to="/skill-map" 
+              class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-white bg-gray-900': $route.name === 'skill-map' }"
+            >
+              Skill Map
+            </RouterLink>
+            <RouterLink 
               to="/data" 
               class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
               :class="{ 'text-white bg-gray-900': $route.name === 'data' }"
@@ -142,6 +149,13 @@
               Skills
             </RouterLink>
             <RouterLink 
+              to="/skill-map" 
+              class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+              @click="mobileMenuOpen = false"
+            >
+              Skill Map
+            </RouterLink>
+            <RouterLink 
               to="/data" 
               class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
               @click="mobileMenuOpen = false"
@@ -168,7 +182,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useProfileStore } from '@/stores/useProfileStore'
 
 const mobileMenuOpen = ref(false)
+const store = useProfileStore()
+
+// Load data from localStorage when app starts
+onMounted(() => {
+  store.loadFromLocalStorage()
+})
 </script>

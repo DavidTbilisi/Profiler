@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Persistence Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeeba; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Life Tracker Data Persistence Test</h1>
+    
+    <div class="test-step">
+        <h3>Step 1: Check Current Storage</h3>
+        <button class="btn-primary" onclick="checkStorage()">Check Storage</button>
+        <div id="storage-result"></div>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 2: Add Test Data</h3>
+        <button class="btn-success" onclick="addTestData()">Add Test Data</button>
+        <div id="add-result"></div>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 3: Verify Data Saved</h3>
+        <button class="btn-primary" onclick="verifyData()">Verify Data</button>
+        <div id="verify-result"></div>
+    </div>
+    
+    <div class="test-step warning">
+        <h3>Step 4: Test Persistence</h3>
+        <p><strong>Now refresh this page</strong> and click "Check Storage" again to verify data persists.</p>
+        <button class="btn-primary" onclick="location.reload()">Refresh Page</button>
+    </div>
+    
+    <div class="test-step">
+        <h3>Step 5: Clear Test Data</h3>
+        <button class="btn-danger" onclick="clearData()">Clear All Data</button>
+        <div id="clear-result"></div>
+    </div>
+
+    <script>
+        function checkStorage() {
+            const result = document.getElementById('storage-result');
+            try {
+                const data = localStorage.getItem('life-tracker-data');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    result.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Data Found in Storage</h4>
+                            <pre>${JSON.stringify({
+                                skills: parsed.skills?.length || 0,
+                                aspirationalSkills: parsed.aspirationalSkills?.length || 0,
+                                skillDependencies: parsed.skillDependencies?.length || 0,
+                                exportedAt: parsed.exportedAt,
+                                version: parsed.version
+                            }, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = '<div class="warning">⚠️ No data found in localStorage</div>';
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function addTestData() {
+            const result = document.getElementById('add-result');
+            try {
+                const testData = {
+                    tasks: [],
+                    journal: {},
+                    moods: [],
+                    knowledge: [],
+                    skills: [
+                        { 
+                            id: 'test-1', 
+                            name: 'Test HTML', 
+                            category: 'Web Development', 
+                            proficiency: 7,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        },
+                        { 
+                            id: 'test-2', 
+                            name: 'Test CSS', 
+                            category: 'Web Development', 
+                            proficiency: 6,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    ],
+                    aspirationalSkills: [
+                        { 
+                            id: 'test-3', 
+                            name: 'Test Vue.js', 
+                            category: 'Web Development', 
+                            priority: 'High',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    ],
+                    skillDependencies: [
+                        { 
+                            fromSkillId: 'test-1', 
+                            toSkillId: 'test-2', 
+                            description: 'HTML is needed for CSS'
+                        },
+                        { 
+                            fromSkillId: 'test-2', 
+                            toSkillId: 'test-3', 
+                            description: 'CSS is needed for Vue.js'
+                        }
+                    ],
+                    userProfile: {},
+                    stats: {},
+                    exportedAt: new Date().toISOString(),
+                    version: '1.0.0'
+                };
+                
+                localStorage.setItem('life-tracker-data', JSON.stringify(testData, null, 2));
+                result.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Test Data Added Successfully</h4>
+                        <p>Added 2 skills, 1 aspirational skill, and 2 dependencies</p>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function verifyData() {
+            const result = document.getElementById('verify-result');
+            try {
+                const data = localStorage.getItem('life-tracker-data');
+                const parsed = JSON.parse(data);
+                
+                const skillCount = parsed.skills?.length || 0;
+                const aspSkillCount = parsed.aspirationalSkills?.length || 0;
+                const depCount = parsed.skillDependencies?.length || 0;
+                
+                result.innerHTML = `
+                    <div class="${skillCount > 0 && depCount > 0 ? 'success' : 'warning'}">
+                        <h4>${skillCount > 0 && depCount > 0 ? '✅' : '⚠️'} Verification Results</h4>
+                        <ul>
+                            <li>Skills: ${skillCount}</li>
+                            <li>Aspirational Skills: ${aspSkillCount}</li>
+                            <li>Dependencies: ${depCount}</li>
+                        </ul>
+                        ${depCount > 0 ? '<p><strong>🎉 Dependencies are being saved!</strong></p>' : '<p><strong>❌ No dependencies found</strong></p>'}
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function clearData() {
+            const result = document.getElementById('clear-result');
+            localStorage.removeItem('life-tracker-data');
+            result.innerHTML = '<div class="success">✅ All data cleared from localStorage</div>';
+        }
+        
+        // Auto-check on page load
+        document.addEventListener('DOMContentLoaded', checkStorage);
+    </script>
+</body>
+</html>

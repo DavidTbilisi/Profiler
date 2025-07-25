@@ -7,6 +7,7 @@ import Stats from '../views/Stats.vue'
 import Knowledge from '../views/Knowledge.vue'
 import Profile from '../views/Profile.vue'
 import Skills from '../views/SkillsView.vue'
+import SkillMap from '../views/SkillMapView.vue'
 import Data from '../views/DataView.vue'
 
 const router = createRouter({
@@ -51,6 +52,11 @@ const router = createRouter({
       path: '/skills',
       name: 'skills',
       component: Skills,
+    },
+    {
+      path: '/skill-map',
+      name: 'skill-map',
+      component: SkillMap,
     },
     {
       path: '/data',

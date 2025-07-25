@@ -5,6 +5,7 @@ export interface LifeTrackerData {
   knowledge: any[]
   skills: any[]
   aspirationalSkills: any[]
+  skillDependencies: any[]
   userProfile: any
   stats: any
   exportedAt: string
@@ -24,6 +25,7 @@ export class JsonStorage {
         knowledge: data.knowledge || [],
         skills: data.skills || [],
         aspirationalSkills: data.aspirationalSkills || [],
+        skillDependencies: data.skillDependencies || [],
         userProfile: data.userProfile || {},
         stats: data.stats || {},
         exportedAt: new Date().toISOString(),
@@ -66,6 +68,7 @@ export class JsonStorage {
       knowledge: data.knowledge || [],
       skills: data.skills || [],
       aspirationalSkills: data.aspirationalSkills || [],
+      skillDependencies: data.skillDependencies || [],
       userProfile: data.userProfile || {},
       stats: data.stats || {},
       exportedAt: new Date().toISOString(),
